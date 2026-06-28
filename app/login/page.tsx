@@ -6,11 +6,13 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { FiArrowLeft, FiMail, FiLock, FiLoader } from "react-icons/fi";
 import toast, { Toaster } from "react-hot-toast";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const callbackUrl = searchParams.get("callbackUrl")|| "/";
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -57,6 +59,10 @@ export default function LoginPage() {
       toast.error(fallbackMsg);
     } finally {
       setLoading(false);
+      await login(email, password);
+      setStatus({ loading: false });
+    } catch (error) {
+      setStatus({ loading: false });
     }
   };
 
