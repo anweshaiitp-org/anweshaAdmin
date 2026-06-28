@@ -7,6 +7,7 @@ import { motion, useMotionValue, useTransform, useSpring, Variants } from "frame
 import { ArrowRight, Home } from "lucide-react";
 
 // Explicit TypeScript types for Sparkle properties
+//layouts
 interface SparkleProps {
   style: React.CSSProperties;
   delay: number;

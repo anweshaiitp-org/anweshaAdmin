@@ -16,16 +16,16 @@ export default auth(async(req) => {
   const role = session?.user?.role;
 
   const isLoginRoute = nextUrl.pathname === "/login";
-  const isNotFoundRoute = nextUrl.pathname === "/not-found";
-  const isLoadingRoute = nextUrl.pathname === "/loading" || nextUrl.pathname === "/loadings";
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api");
+  const publicRoutes = ["/loading", "/loadings", "/not-found", "/unauthorised", "/unauthorized"];
+  const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
 
   if (isApiAuthRoute) {
     return NextResponse.next();
   }
 
-  // Allow loading and not-found pages publicly
-  if (isLoadingRoute || isNotFoundRoute) {
+  // Allow public pages
+  if (isPublicRoute) {
     return NextResponse.next();
   }
 
