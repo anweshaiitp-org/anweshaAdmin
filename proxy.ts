@@ -16,9 +16,15 @@ export default auth(async(req) => {
   const role = session?.user?.role;
 
   const isLoginRoute = nextUrl.pathname === "/login";
+  const isNotFoundRoute = nextUrl.pathname === "/not-found";
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api");
 
   if (isApiAuthRoute) {
+    return NextResponse.next();
+  }
+
+  // Allow not-found page publicly
+  if (isNotFoundRoute) {
     return NextResponse.next();
   }
 
@@ -33,16 +39,7 @@ export default auth(async(req) => {
 
   // Protected routes
   if (!isLoggedIn) {
-    const callbackUrl =
-      nextUrl.pathname +
-      (nextUrl.search || "");
-
-    return NextResponse.redirect(
-      new URL(
-        `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
-        nextUrl
-      )
-    );
+    return NextResponse.redirect(new URL("/login", nextUrl));
   }
 
   // Logged in but not allowed
