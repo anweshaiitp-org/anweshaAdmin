@@ -1,38 +1,61 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { auth } from "./auth";
+import { signOut } from 'next-auth/react';
 
-export default auth((req: NextRequest & {auth :any} )=>{
-  const {nextUrl}=req;
-  const isLogged = !!req.auth?.user?.email;
-  const userRole=req.auth?.user?.role;
-  const ALLOWED_ROLES = ["Moderator", "Admin", "SuperAdmin"];
-  const isAuthRoute=nextUrl.pathname.startsWith("/login") || nextUrl.pathname.startsWith("/reset-password");
-  const isApiAuthRoute=nextUrl.pathname.startsWith("/api/auth");
-  if (isApiAuthRoute){
+const ALLOWED_ROLES = [
+  "MODERATOR",
+  "ADMIN",
+  "SUPER_ADMIN",
+];
+
+export default auth(async(req) => {
+  const { nextUrl } = req;
+
+  const session = req.auth;
+  const isLoggedIn = !!session;
+  const role = session?.user?.role;
+
+  const isLoginRoute = nextUrl.pathname === "/login";
+  const isApiAuthRoute = nextUrl.pathname.startsWith("/api");
+
+  if (isApiAuthRoute) {
     return NextResponse.next();
-  } 
-  else if(isAuthRoute){
-    if(isLogged && ALLOWED_ROLES.includes(userRole)){
+  }
+
+  // Allow login page for unauthenticated users
+  if (isLoginRoute) {
+    if (isLoggedIn && role && ALLOWED_ROLES.includes(role)) {
       return NextResponse.redirect(new URL("/", nextUrl));
     }
+
     return NextResponse.next();
   }
-  else if(!isLogged){
-    let callbackUrl=nextUrl.pathname;
-    if(nextUrl.search){
-      callbackUrl+=nextUrl.search;
-    }
-    const encodedCallbackUrl = encodeURIComponent(callbackUrl);
+
+  // Protected routes
+  if (!isLoggedIn) {
+    const callbackUrl =
+      nextUrl.pathname +
+      (nextUrl.search || "");
+
     return NextResponse.redirect(
-      new URL(`/login?callbackUrl=${encodedCallbackUrl}`, nextUrl)
+      new URL(
+        `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        nextUrl
+      )
     );
   }
+
+  // Logged in but not allowed
+  if (!role || !ALLOWED_ROLES.includes(role)) {
+    await signOut();
+    return NextResponse.redirect(new URL("/login", nextUrl));
+  }
+
   return NextResponse.next();
 });
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)).*)"
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)$).*)",
   ],
 };

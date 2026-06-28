@@ -1,12 +1,18 @@
 import { redirect } from "next/navigation";
-import { getAuthCookie } from "@/auth";
+import { auth } from "@/auth";
+
+const ALLOWED_ROLES = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
 
 export default async function Home() {
-  const token = await getAuthCookie();
-  
-  if (token) {
+  const session = await auth();
+
+  if (
+    session &&
+    session.user.role &&
+    ALLOWED_ROLES.includes(session.user.role)
+  ) {
     redirect("/admin");
-  } else {
-    redirect("/login");
   }
+
+  redirect("/login");
 }
