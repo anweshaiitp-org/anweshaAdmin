@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { FiMenu, FiBell, FiMoon, FiSun, FiUser, FiLogOut } from "react-icons/fi";
 import AnweshaLogo from "./AnweshaLogo"; 
+import { useAuth } from "@/context/AuthContext";
 
 interface AdminNavbarProps {
   toggleSidebar: () => void;
@@ -12,6 +13,7 @@ interface AdminNavbarProps {
 
 export default function AdminNavbar({ toggleSidebar, isDarkMode, toggleTheme }: AdminNavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { logout } = useAuth();
 
   return (
     <header className={`h-20 flex items-center justify-between px-4 md:px-5 z-30 transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-transparent'}`}>
@@ -40,16 +42,16 @@ export default function AdminNavbar({ toggleSidebar, isDarkMode, toggleTheme }: 
       {/* RIGHT SIDE */}
       <div className="flex items-center space-x-2 md:space-x-4">
          <button onClick={toggleTheme} className={`p-2 rounded-full transition-colors ${isDarkMode ? 'text-yellow-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-200'}`}>
-           {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+            {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
          </button>
-
+ 
          <button className={`relative p-2 rounded-full transition-colors ${isDarkMode ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-200'}`}>
            <FiBell size={20} />
            <span className={`absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full border-2 ${isDarkMode ? 'border-gray-900' : 'border-[#f0f2f5]'}`}></span>
          </button>
-
+ 
          <div className={`h-8 w-px mx-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`}></div>
-
+ 
          <div className="relative">
            <button 
              onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -57,13 +59,16 @@ export default function AdminNavbar({ toggleSidebar, isDarkMode, toggleTheme }: 
            >
              A
            </button>
-
+ 
            {isProfileOpen && (
              <div className={`absolute right-0 mt-3 w-48 rounded-2xl shadow-xl py-2 border ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-100 text-gray-800'}`}>
                <button className={`w-full text-left px-4 py-2.5 text-sm flex items-center ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
                  <FiUser className="mr-3" size={16} /> Profile
                </button>
-               <button className={`w-full text-left px-4 py-2.5 text-sm flex items-center text-red-600 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-red-50'}`}>
+               <button 
+                 onClick={logout}
+                 className={`w-full text-left px-4 py-2.5 text-sm flex items-center text-red-600 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-red-50'}`}
+               >
                  <FiLogOut className="mr-3" size={16} /> Logout
                </button>
              </div>
