@@ -6,7 +6,9 @@ import { FiMail, FiLock, FiLoader } from "react-icons/fi";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 
-export default function LoginPage() {
+import { Suspense } from "react";
+
+function LoginContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const { login } = useAuth();
@@ -150,5 +152,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen w-full flex items-center justify-center bg-white">
+        <FiLoader className="animate-spin text-[#2563EB]" size={40} />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
