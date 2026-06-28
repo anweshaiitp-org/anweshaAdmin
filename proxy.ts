@@ -17,14 +17,15 @@ export default auth(async(req) => {
 
   const isLoginRoute = nextUrl.pathname === "/login";
   const isNotFoundRoute = nextUrl.pathname === "/not-found";
+  const isLoadingRoute = nextUrl.pathname === "/loading" || nextUrl.pathname === "/loadings";
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api");
 
   if (isApiAuthRoute) {
     return NextResponse.next();
   }
 
-  // Allow not-found page publicly
-  if (isNotFoundRoute) {
+  // Allow loading and not-found pages publicly
+  if (isLoadingRoute || isNotFoundRoute) {
     return NextResponse.next();
   }
 
