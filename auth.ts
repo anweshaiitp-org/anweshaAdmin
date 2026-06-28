@@ -1,118 +1,122 @@
-import NextAuth, { DefaultSession }  from "next-auth";
+import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { CredentialsSignin } from "next-auth";
+import type { LoginResponse } from "@/types/api";
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      role: string; 
-    } & DefaultSession["user"];
+const NEXTAUTH_URL = process.env.NEXTAUTH_URL;
+
+if (!NEXTAUTH_URL) {
+  throw new Error("NEXTAUTH_URL is not defined");
+}
+
+
+class LoginError extends CredentialsSignin {
+  constructor(code: string) {
+    super();
+    this.code = code;
   }
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-    providers:[
-        Credentials({
-            name:"Credentials",
-            credentials:{
-                email:{label:"Email",type:"string"},
-                password:{label:"Password",type:"password"}
-            },
-            async authorize(credentials){
-                if(!credentials?.email || !credentials?.password){
-                    return null;
-                }
-                const email=credentials.email as string;
-                const password=credentials.password as string;
-                //fetching users from database here and then searching for email in the users array and matching password for authentication
-                //use bcrypt.compare for validating password
-                const user = {
-                    id: "admin-123",
-                    email: "admin@example.com",
-                    name: "Admin User",
-                    passwordHash: "123", 
-                    role: "Admin"
-                };
-                if(!user){
-                    return null;
-                }
-                if (email !== user.email) {
-                    return null; 
-                }
-                const isValidPassword=password==user.passwordHash;//use compare for validating password here
-                if(!isValidPassword){
-                    return null;
-                }
-                return {
-                    id:user.id,
-                    name:user.name,
-                    email:user.email,
-                    role:user.role
-                }
-            }
-        })
-    ],
-    callbacks:{
-        async jwt({token,user}){
-            if(user){
-                token.id=user.id;
-                token.role=(user as any).role;
-            }
-            return token;
+  providers: [
+    Credentials({
+      name: "Credentials",
+
+      credentials: {
+        email: {
+          label: "Email",
+          type: "email",
         },
-        async session({session,token}){
-            if (token && session.user) {
-                session.user.id = token.id as string;
-                session.user.role = token.role as string;
-            }
-            return session;
+        password: {
+          label: "Password",
+          type: "password",
+        },
+      },
+
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new LoginError("INVALID_CREDENTIALS");
         }
+
+        let response: Response;
+
+        try {
+          response = await fetch(`${NEXTAUTH_URL}/api/admin/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email_id: credentials.email,
+              password: credentials.password,
+            }),
+          });
+        } catch (error) {
+          console.error("Failed to reach authentication server:", error);
+          throw new LoginError("SERVER_UNAVAILABLE");
+        }
+
+        let data: LoginResponse;
+
+        try {
+          data = await response.json();
+          console.log(data);
+        } catch (error) {
+          console.error("Invalid backend response:", error);
+          throw new LoginError("UNKNOWN_ERROR");
+        }
+
+        if (!response.ok || !data.success || !data.user || !data.token) {
+          throw new LoginError(data.code ?? "UNKNOWN_ERROR");
+        }
+
+        return {
+          id: data.user.user_id,
+          name: data.user.full_name,
+          email: data.user.email_id,
+          role: data.user.role,
+          anweshaId: data.user.anwesha_id,
+          accessToken: data.token,
+        };
+      },
+    }),
+  ],
+
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+        token.anweshaId = user.anweshaId;
+        token.accessToken = user.accessToken;
+      }
+
+      return token;
     },
-    pages:{
-        signIn:"/login",
+
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        session.user.anweshaId = token.anweshaId as string;
+      }
+
+      session.accessToken = token.accessToken as string;
+
+      return session;
     },
-    session:{
-        strategy:"jwt",
-        maxAge: 60*60,
-    },
-    secret: process.env.NEXTAUTH_SECRET,
+  },
+
+  pages: {
+    signIn: "/login",
+  },
+
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 48, // 48 hours
+  },
+
+  secret: process.env.NEXTAUTH_SECRET,
+
+  trustHost: true,
 });
-'use server';
-
-import { cookies } from 'next/headers';
-
-const COOKIE_NAME = 'auth_token';
-
-export async function setAuthCookie(token: string) {
-  try {
-    const cookieStore = await cookies();
-    cookieStore.set(COOKIE_NAME, token, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
-  } catch (error) {
-    console.error('Failed to set auth cookie:', error);
-  }
-}
-
-export async function getAuthCookie(): Promise<string | null> {
-  try {
-    const cookieStore = await cookies();
-    return cookieStore.get(COOKIE_NAME)?.value || null;
-  } catch (error) {
-    console.error('Failed to get auth cookie:', error);
-    return null;
-  }
-}
-
-export async function removeAuthCookie() {
-  try {
-    const cookieStore = await cookies();
-    cookieStore.delete(COOKIE_NAME);
-  } catch (error) {
-    console.error('Failed to remove auth cookie:', error);
-  }
-}

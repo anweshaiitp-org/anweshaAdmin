@@ -1,199 +1,142 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
 import toast from 'react-hot-toast';
-import { setAuthCookie, getAuthCookie, removeAuthCookie } from '@/auth';
 
 export interface User {
   id: string;
   email: string;
   name?: string;
   role?: string;
+  anweshaId?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
+  token: string | undefined;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  updateUser: (user: Partial<User>) => void;
+  login: (email: string, password: string, callbackUrl?: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// API URL configurable via environment variable or fallback to same origin
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || '';
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+export function AuthProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Set Authorization header for all axios requests
-  const setAxiosHeader = (tokenStr: string | null) => {
-    if (tokenStr) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${tokenStr}`;
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
-    }
-  };
+  const login = async (
+    email: string,
+    password: string,
+    callbackUrl = "/"
+  ) => {
+    const toastId = toast.loading("Logging in...");
 
-  // Helper to perform logout state cleanup
-  const handleLogout = (sessionExpired = false) => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
-    setToken(null);
-    setUser(null);
-    setAxiosHeader(null);
-    removeAuthCookie();
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
 
-    if (sessionExpired) {
-      toast.error('Session expired. Please log in again.');
-    } else {
-      toast.success('Successfully logged out!');
-    }
-    
-    router.push('/login');
-  };
+    console.log(result);
 
-  // Initialize auth state from local storage on mount
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        let storedToken = localStorage.getItem('auth_token');
-        const storedUser = localStorage.getItem('auth_user');
+    if (result?.error) {
+      let message = "Something went wrong.";
 
-        if (!storedToken) {
-          const cookieToken = await getAuthCookie();
-          if (cookieToken) {
-            storedToken = cookieToken;
-            localStorage.setItem('auth_token', cookieToken);
-          }
-        }
+      switch (result.code) {
+        case "ACCOUNT_LOCKED":
+          message = "Administrator account is locked.";
+          break;
 
-        if (storedToken && storedUser) {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
-          setAxiosHeader(storedToken);
+        case "EMAIL_NOT_VERIFIED":
+          message = "Please verify your email first.";
+          break;
 
-          // Verify token with backend
-          try {
-            const response = await axios.get(`${BACKEND_URL}/api/auth/me`, {
-              headers: { Authorization: `Bearer ${storedToken}` }
-            });
-            if (response.data?.user) {
-              setUser(response.data.user);
-              localStorage.setItem('auth_user', JSON.stringify(response.data.user));
-            }
-          } catch (err) {
-            console.error('Failed to verify token on boot:', err);
-            // If verification fails with 401, clean up session
-            if (axios.isAxiosError(err) && err.response?.status === 401) {
-              handleLogout(true);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error initializing authentication:', error);
-      } finally {
-        setIsLoading(false);
+        case "ACCESS_DENIED":
+          message = "Administrator privileges required.";
+          break;
+
+        case "INVALID_CREDENTIALS":
+          message = "Invalid email or password.";
+          break;
+        
+        case "SERVER_UNAVAILABLE":
+          message = "Authentication server is currently unavailable.";
+          break;
+
+        case "UNKNOWN_ERROR":
+          message = "Something went wrong. Please try again later.";
+          break;
+
+        default:
+          console.error("Unknown login error:", result.error);
+          message = "Login failed. Please try again.";
       }
-    };
 
-    initializeAuth();
-  }, []);
-
-  // Configure response interceptor to catch any global 401 Unauthorized API responses
-  useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response && error.response.status === 401) {
-          handleLogout(true);
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    return () => {
-      axios.interceptors.response.eject(interceptor);
-    };
-  }, []);
-
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    const toastId = toast.loading('Logging in...');
-    try {
-      const response = await axios.post(`${BACKEND_URL}/auth/admin/login`, {
-        email_id: email,
-        password,
+      toast.error(message, {
+        id: toastId,
       });
 
-      const responseData = response.data?.data || response.data;
-      const receivedToken = responseData?.token || responseData?.access_token || responseData?.jwt || (typeof responseData === 'string' ? responseData : null);
-      const receivedUser = responseData?.user || responseData?.admin || { id: 'admin', email, role: 'admin' };
+      throw new Error(message);
+    }
 
-      if (!receivedToken) {
-        throw new Error('Invalid response from server. Missing token.');
+    toast.success("Successfully logged in!", {
+      id: toastId,
+    });
+
+    router.push(callbackUrl);
+    router.refresh();
+  };
+
+  const logout = async () => {
+    await signOut({
+      redirect: true,
+      callbackUrl: '/login',
+    });
+  };
+
+  const value: AuthContextType = {
+    user: session
+      ? {
+        id: session.user.id,
+        email: session.user.email!,
+        name: session.user.name ?? undefined,
+        role: session.user.role,
+        anweshaId: session.user.anweshaId,
       }
+      : null,
 
-      localStorage.setItem('auth_token', receivedToken);
-      localStorage.setItem('auth_user', JSON.stringify(receivedUser));
+    token: session?.accessToken,
 
-      setToken(receivedToken);
-      setUser(receivedUser);
-      setAxiosHeader(receivedToken);
-      await setAuthCookie(receivedToken);
+    isAuthenticated: !!session,
 
-      toast.success('Successfully logged in!', { id: toastId });
-      router.push('/');
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Login failed. Please check your credentials.';
-      toast.error(errorMessage, { id: toastId });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    isLoading: status === 'loading',
 
-  const logout = () => {
-    handleLogout(false);
-  };
+    login,
 
-  const updateUser = (updatedFields: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...updatedFields };
-      setUser(updatedUser);
-      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
-    }
+    logout,
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        logout,
-        updateUser,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
   }
+
   return context;
-};
+}
