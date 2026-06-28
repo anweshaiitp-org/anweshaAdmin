@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiMail, FiLock, FiLoader } from "react-icons/fi";
 import toast, { Toaster } from "react-hot-toast";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,17 +41,9 @@ export default function LoginPage() {
     console.log("-----------------------");
 
     try {
-      // Simulate network request
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // On success
-      toast.success("Login successful!");
+      await login(email, password);
       setStatus({ loading: false });
-
-      // Normally you would redirect here
-      // router.push('/dashboard');
     } catch (error) {
-      toast.error("Something went wrong. Please try again.");
       setStatus({ loading: false });
     }
   };
