@@ -5,15 +5,16 @@ import { FiMenu, FiBell, FiMoon, FiSun, FiUser, FiLogOut } from "react-icons/fi"
 import AnweshaLogo from "./AnweshaLogo"; 
 import { useAuth } from "@/context/AuthContext";
 
+// Removed the local theme props as they are now global
 interface AdminNavbarProps {
   toggleSidebar: () => void;
-  isDarkMode: boolean;
-  toggleTheme: () => void;
 }
 
-export default function AdminNavbar({ toggleSidebar, isDarkMode, toggleTheme }: AdminNavbarProps) {
+export default function AdminNavbar({ toggleSidebar }: AdminNavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { logout } = useAuth();
+  
+  // Extracting theme state and toggle directly from the upgraded AuthContext
+  const { logout, isDarkMode, toggleTheme } = useAuth();
 
   return (
     <header className={`h-20 flex items-center justify-between px-4 md:px-5 z-30 transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-transparent'}`}>

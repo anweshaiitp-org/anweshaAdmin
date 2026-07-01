@@ -16,6 +16,8 @@ export default auth(async(req) => {
   const role = session?.user?.role;
 
   const isLoginRoute = nextUrl.pathname === "/login";
+
+
   const isLoadingRoute = nextUrl.pathname === "/loading";
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api");
 

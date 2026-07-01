@@ -5,16 +5,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { sidebarItems } from "../lib/navConfig";
 import { FiChevronRight, FiChevronLeft, FiX } from "react-icons/fi";
+import { useAuth } from "@/context/AuthContext"; // 1. Import the global brain
 
+// 2. Remove isDarkMode from the interface
 interface AdminSidebarProps {
   isSidebarOpen: boolean;
-  isDarkMode: boolean;
   toggleSidebar: () => void;
 }
 
-export default function AdminSidebar({ isSidebarOpen, isDarkMode, toggleSidebar }: AdminSidebarProps) {
+// 3. Remove isDarkMode from the function parameters
+export default function AdminSidebar({ isSidebarOpen, toggleSidebar }: AdminSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false); 
+  
+  // 4. Extract isDarkMode directly from the AuthContext
+  const { isDarkMode } = useAuth();
 
   return (
     <aside
