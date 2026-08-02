@@ -16,6 +16,7 @@ export default function ViewEventPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [posterUrl, setPosterUrl] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -23,7 +24,18 @@ export default function ViewEventPage() {
     try {
       const decodedId = decodeURIComponent(eventId);
       const res = await fetchEvent(decodedId);
-      if (res.success) setEvent(res.event);
+      if (res.success) {
+        setEvent(res.event);
+        if (res.event.poster) {
+          try {
+            const pRes = await fetch(`/api/admin/events/${encodeURIComponent(decodedId)}/poster`);
+            const pData = await pRes.json();
+            if (pData.success && pData.url) setPosterUrl(pData.url);
+          } catch (e) {
+            console.error("Failed to fetch poster URL", e);
+          }
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load event');
     } finally {
@@ -98,6 +110,13 @@ export default function ViewEventPage() {
           </span>
         ))}
       </div>
+
+      {/* Poster Display */}
+      {posterUrl && (
+        <div className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} flex justify-center`}>
+          <img src={posterUrl} alt={`${event.name} Poster`} className="max-h-96 object-contain rounded-lg" />
+        </div>
+      )}
 
       {/* Details Card */}
       <div className={`p-6 md:p-8 rounded-2xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>

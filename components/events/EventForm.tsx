@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { EventTag } from '@/types/events';
 import type { Event } from '@/types/events';
-import { createEvent, updateEvent } from '@/lib/eventService';
+import { createEvent, updateEvent, parseOrganizers } from '@/lib/eventService';
 import PosterUpload from './PosterUpload';
 import toast from 'react-hot-toast';
 import { FiLoader } from 'react-icons/fi';
@@ -21,7 +21,7 @@ export default function EventForm({ initialData }: EventFormProps) {
 
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
-    organizer: initialData?.organizer || '',
+    organizer: initialData?.organizer ? parseOrganizers(initialData.organizer).map(([n, r]) => `${n}:${r}`).join(', ') : '',
     venue: initialData?.venue || '',
     description: initialData?.description || '',
     start_time: initialData?.start_time ? initialData.start_time.slice(0, 16) : '',
@@ -40,8 +40,20 @@ export default function EventForm({ initialData }: EventFormProps) {
   });
 
   const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [currentPosterUrl, setCurrentPosterUrl] = useState<string | undefined>(undefined);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  React.useEffect(() => {
+    if (initialData?.id && initialData?.poster) {
+      fetch(`/api/admin/events/${encodeURIComponent(initialData.id)}/poster`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.url) setCurrentPosterUrl(data.url);
+        })
+        .catch(console.error);
+    }
+  }, [initialData?.id, initialData?.poster]);
 
   // ---- Validation ----
   const validate = (): boolean => {
@@ -77,15 +89,53 @@ export default function EventForm({ initialData }: EventFormProps) {
           : undefined,
       };
 
+      let eventId = initialData?.id;
+
       if (isEditMode) {
-        await updateEvent(initialData!.id!, payload);
+        await updateEvent(eventId!, payload);
         toast.success('Event updated successfully!', { id: toastId });
-        router.push(`/admin/events/${initialData!.id}`);
       } else {
-        await createEvent(payload);
+        const res = await createEvent(payload);
+        eventId = res.event.id;
         toast.success('Event created successfully!', { id: toastId });
-        router.push('/admin/events/list');
       }
+
+      // Handle Poster Upload if a file was selected
+      if (posterFile && eventId) {
+        toast.loading('Uploading poster...', { id: toastId });
+        try {
+          // 1. Get presigned URL
+          const urlRes = await fetch(`/api/admin/events/${encodeURIComponent(eventId)}/poster/upload-url?contentType=${encodeURIComponent(posterFile.type)}`);
+          const urlData = await urlRes.json();
+          
+          if (!urlData.uploadUrl) throw new Error('Failed to get upload URL');
+
+          // 2. Upload file to S3
+          const uploadRes = await fetch(urlData.uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': posterFile.type },
+            body: posterFile
+          });
+          
+          if (!uploadRes.ok) throw new Error('Failed to upload file to storage');
+
+          // 3. Confirm upload with backend
+          const confirmRes = await fetch(`/api/admin/events/${encodeURIComponent(eventId)}/poster`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileKey: urlData.fileKey })
+          });
+
+          if (!confirmRes.ok) throw new Error('Failed to save poster key');
+
+          toast.success('Poster uploaded successfully!', { id: toastId });
+        } catch (uploadErr: any) {
+          console.error('Poster upload error:', uploadErr);
+          toast.error('Event saved, but poster upload failed', { id: toastId });
+        }
+      }
+
+      router.push(isEditMode ? `/admin/events/${eventId}` : '/admin/events/list');
     } catch (err: any) {
       toast.error(err.message || 'Failed to save event', { id: toastId });
     } finally {
@@ -280,7 +330,7 @@ export default function EventForm({ initialData }: EventFormProps) {
       <div className="mb-10">
         <label className={labelCls}>Event Poster</label>
         <PosterUpload
-          currentPosterUrl={initialData?.poster ? undefined : undefined}
+          currentPosterUrl={currentPosterUrl}
           onFileSelect={setPosterFile}
         />
         <p className={`text-[10px] mt-2 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
