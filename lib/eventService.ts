@@ -142,10 +142,23 @@ export async function getEventPosterUrl(eventId: string): Promise<PosterViewResp
 // ---------------------------------------------------------------------------
 
 /** Parse organizer string "Name:Role, Name2:Role2" into array of tuples */
-export function parseOrganizers(organizer: string): [string, string][] {
+export function parseOrganizers(organizer: any): [string, string][] {
   if (!organizer) return [];
-  return organizer.split(',').map((entry) => {
-    const [name, role] = entry.trim().split(':');
-    return [name?.trim() || '', role?.trim() || ''];
+  
+  let entries: string[] = [];
+  if (Array.isArray(organizer)) {
+    entries = organizer.map(o => typeof o === 'string' ? o : JSON.stringify(o));
+  } else if (typeof organizer === 'string') {
+    entries = organizer.split(',');
+  } else {
+    entries = [String(organizer)];
+  }
+
+  return entries.map((entry) => {
+    // In case it was an object array, it might not split nicely by ':', but this prevents the crash
+    const parts = entry.trim().split(':');
+    const name = parts[0]?.trim() || '';
+    const role = parts.length > 1 ? parts.slice(1).join(':').trim() : 'Organizer';
+    return [name, role];
   });
 }
