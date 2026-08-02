@@ -9,6 +9,7 @@ import { createEvent, updateEvent, parseOrganizers } from '@/lib/eventService';
 import PosterUpload from './PosterUpload';
 import toast from 'react-hot-toast';
 import { FiLoader } from 'react-icons/fi';
+import TiptapEditor from '../TiptapEditor';
 
 interface EventFormProps {
   initialData?: Partial<Event>;
@@ -104,11 +105,13 @@ export default function EventForm({ initialData }: EventFormProps) {
       if (posterFile && eventId) {
         toast.loading('Uploading poster...', { id: toastId });
         try {
-          // 1. Get presigned URL
-          const urlRes = await fetch(`/api/admin/events/${encodeURIComponent(eventId)}/poster/upload-url?contentType=${encodeURIComponent(posterFile.type)}`);
+          // 1. Get presigned URL (FIXED: Added fileName to the query string)
+          const uploadEndpoint = `/api/admin/events/${encodeURIComponent(eventId)}/poster/upload-url?contentType=${encodeURIComponent(posterFile.type)}&fileName=${encodeURIComponent(posterFile.name)}`;
+          
+          const urlRes = await fetch(uploadEndpoint);
           const urlData = await urlRes.json();
           
-          if (!urlData.uploadUrl) throw new Error('Failed to get upload URL');
+          if (!urlData.uploadUrl) throw new Error(urlData.message || 'Failed to get upload URL');
 
           // 2. Upload file to S3
           const uploadRes = await fetch(urlData.uploadUrl, {
@@ -186,10 +189,17 @@ export default function EventForm({ initialData }: EventFormProps) {
           {errors.name && <p className={errorCls}>{errors.name}</p>}
         </div>
         <div>
-          <label className={labelCls}>Organizer *</label>
-          <input className={inputCls} value={formData.organizer} onChange={(e) => update('organizer', e.target.value)} placeholder="Name:Role, Name2:Role2" />
+          <label className={labelCls}>Organizers *</label>
+          <input 
+            className={inputCls} 
+            value={formData.organizer} 
+            onChange={(e) => update('organizer', e.target.value)} 
+            placeholder="Prashant:620397552, Rahul:9934" 
+          />
           {errors.organizer && <p className={errorCls}>{errors.organizer}</p>}
-          <p className={`text-[10px] mt-1 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>Format: &quot;Name:Role, Name2:Role2&quot;</p>
+          <p className={`text-[10px] mt-1 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+            Format: "Name:Phone, Name2:Phone2"
+          </p>
         </div>
         <div>
           <label className={labelCls}>Venue</label>
@@ -204,12 +214,11 @@ export default function EventForm({ initialData }: EventFormProps) {
       {/* ---- Description ---- */}
       <div className="mb-8">
         <label className={labelCls}>Description</label>
-        <textarea
-          rows={4}
-          className={`${inputCls} resize-y`}
-          value={formData.description}
-          onChange={(e) => update('description', e.target.value)}
-          placeholder="Event description (supports HTML or Markdown)"
+        {/* 2. Replace textarea with TiptapEditor */}
+        <TiptapEditor
+          content={formData.description}
+          onChange={(html) => update('description', html)}
+          isDarkMode={isDarkMode}
         />
       </div>
 
