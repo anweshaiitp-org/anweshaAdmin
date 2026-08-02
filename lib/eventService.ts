@@ -137,28 +137,34 @@ export async function getEventPosterUrl(eventId: string): Promise<PosterViewResp
   return res.json();
 }
 
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
+export const parseOrganizers = (organizerInput?: any): [string, string][] => {
+  if (!organizerInput) return [];
 
-/** Parse organizer string "Name:Role, Name2:Role2" into array of tuples */
-export function parseOrganizers(organizer: any): [string, string][] {
-  if (!organizer) return [];
+  // 1. Defensively force the input into a string. 
+  // If the backend returned a parsed Array/Object instead of a string, stringify it.
+  let cleanedString = typeof organizerInput === 'string' 
+    ? organizerInput 
+    : JSON.stringify(organizerInput);
   
-  let entries: string[] = [];
-  if (Array.isArray(organizer)) {
-    entries = organizer.map(o => typeof o === 'string' ? o : JSON.stringify(o));
-  } else if (typeof organizer === 'string') {
-    entries = organizer.split(',');
-  } else {
-    entries = [String(organizer)];
+  // 2. Clean up that weird legacy data format: ["Rahul","123"]:Organizer
+  const legacyRegex = /\[\\?"(.*?)\\?","\\?(.*?)\\?"\](?::"?Organizer"?)?/g;
+  if (legacyRegex.test(cleanedString)) {
+    cleanedString = cleanedString.replace(legacyRegex, "$1:$2");
   }
 
-  return entries.map((entry) => {
-    // In case it was an object array, it might not split nicely by ':', but this prevents the crash
-    const parts = entry.trim().split(':');
-    const name = parts[0]?.trim() || '';
-    const role = parts.length > 1 ? parts.slice(1).join(':').trim() : 'Organizer';
-    return [name, role];
-  });
-}
+  // 3. Split by comma (to separate multiple organizers)
+  return cleanedString
+    .split(',')
+    .map((person) => {
+      // 4. Split by colon to separate Name and Phone
+      const parts = person.split(':');
+      
+      // Clean up any remaining rogue quotes or brackets
+      const name = (parts[0] || '').replace(/[\[\]"\\]/g, '').trim();
+      const phone = (parts.slice(1).join(':') || '').replace(/[\[\]"\\]/g, '').trim();
+
+      return [name, phone] as [string, string];
+    })
+    // Filter out any completely empty entries
+    .filter(([name, phone]) => name.length > 0 || phone.length > 0);
+};
