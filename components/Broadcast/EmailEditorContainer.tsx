@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import EmailEditor, { EditorRef } from "react-email-editor";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 
-export function EmailEditorContainer() {
-  const emailEditorRef = useRef<EditorRef>(null);
+interface EmailEditorContainerProps {
+  editorRef: React.RefObject<EditorRef | any>;
+  draftId?: string; // Used to isolate local storage keys when editing
+}
+
+export function EmailEditorContainer({ editorRef, draftId }: EmailEditorContainerProps) {
   const [isReady, setIsReady] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -14,53 +18,38 @@ export function EmailEditorContainer() {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
-  // Load draft on mount
-  useEffect(() => {
-    const fetchDraft = async () => {
-      try {
-        const res = await fetch("/api/admin/broadcast/draft");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.design && emailEditorRef.current?.editor) {
-            emailEditorRef.current.editor.loadDesign(data.design);
-            toast.success("Draft restored");
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load draft", err);
-      }
-    };
-    
-    if (isReady) {
-      fetchDraft();
-    }
-  }, [isReady]);
+  // Dynamic storage key based on whether we are creating or editing
+  const storageKey = draftId ? `anwesha_email_design_${draftId}` : "anwesha_email_design";
 
-  // Auto-save logic
-  const saveDraft = useCallback(async () => {
-    if (!emailEditorRef.current?.editor || !isReady) return;
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    if (isReady && editorRef.current?.editor) {
+      const savedDesign = localStorage.getItem(storageKey);
+      if (savedDesign) {
+        try {
+          editorRef.current.editor.loadDesign(JSON.parse(savedDesign));
+          toast.success("Draft design restored from local storage");
+        } catch (err) {
+          console.error("Failed to parse saved design", err);
+        }
+      }
+    }
+  }, [isReady, editorRef, storageKey]);
+
+  // Auto-save logic to localStorage
+  const saveDraft = useCallback(() => {
+    if (!editorRef.current?.editor || !isReady) return;
     
     setIsSaving(true);
-    emailEditorRef.current.editor.exportHtml(async (data) => {
+    editorRef.current.editor.exportHtml((data: any) => {
       const { design } = data;
-      try {
-        const res = await fetch("/api/admin/broadcast/draft", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ design })
-        });
-        
-        if (res.ok) {
-          setLastSaved(new Date());
-        }
-      } catch (err) {
-        console.error("Failed to auto-save", err);
-      } finally {
-        setIsSaving(false);
-      }
+      localStorage.setItem(storageKey, JSON.stringify(design));
+      setLastSaved(new Date());
+      setIsSaving(false);
     });
-  }, [isReady]);
+  }, [isReady, editorRef, storageKey]);
 
+  // Trigger auto-save every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       saveDraft();
@@ -73,8 +62,8 @@ export function EmailEditorContainer() {
     setIsReady(true);
     
     // Setup Cloudinary Image Upload
-    if (emailEditorRef.current?.editor && cloudName && uploadPreset) {
-      emailEditorRef.current.editor.registerCallback('image', function(file, done) {
+    if (editorRef.current?.editor && cloudName && uploadPreset) {
+      editorRef.current.editor.registerCallback('image', function(file: any, done: any) {
         const data = new FormData();
         data.append('file', file.attachments[0]);
         data.append('upload_preset', uploadPreset);
@@ -93,7 +82,7 @@ export function EmailEditorContainer() {
           done({ progress: 100, url: '' }); // Fail gracefully
         });
       });
-    } else if (emailEditorRef.current?.editor) {
+    } else if (editorRef.current?.editor) {
        console.warn("Cloudinary configuration missing. Image uploads will not work.");
     }
   };
@@ -110,16 +99,16 @@ export function EmailEditorContainer() {
       <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b border-gray-100 text-sm">
         <div className="text-gray-500 flex items-center gap-2">
           {isSaving ? (
-            <span className="flex items-center gap-1 text-blue-500"><Loader2 size={12} className="animate-spin" /> Saving draft...</span>
+            <span className="flex items-center gap-1 text-blue-500"><Loader2 size={12} className="animate-spin" /> Auto-saving...</span>
           ) : lastSaved ? (
-            <span>Draft saved at {lastSaved.toLocaleTimeString()}</span>
+            <span>Locally saved at {lastSaved.toLocaleTimeString()}</span>
           ) : (
-            <span>No draft saved yet</span>
+            <span>No local edits yet</span>
           )}
         </div>
         
         <button 
-          onClick={() => emailEditorRef.current?.editor?.showPreview('desktop')}
+          onClick={() => editorRef.current?.editor?.showPreview('desktop')}
           disabled={!isReady}
           className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
         >
@@ -129,7 +118,7 @@ export function EmailEditorContainer() {
 
       <div className="flex-1 relative">
         <EmailEditor
-          ref={emailEditorRef}
+          ref={editorRef}
           onReady={onReady}
           options={{
             displayMode: 'email',
@@ -139,26 +128,10 @@ export function EmailEditorContainer() {
             fonts: {
               showDefaultFonts: true,
               customFonts: [
-                {
-                  label: "Inter",
-                  value: "'Inter', sans-serif",
-                  url: "https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-                },
-                {
-                  label: "Roboto",
-                  value: "'Roboto', sans-serif",
-                  url: "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
-                },
-                {
-                  label: "Outfit",
-                  value: "'Outfit', sans-serif",
-                  url: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
-                },
-                {
-                  label: "Playfair Display",
-                  value: "'Playfair Display', serif",
-                  url: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
-                }
+                { label: "Inter", value: "'Inter', sans-serif", url: "https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" },
+                { label: "Roboto", value: "'Roboto', sans-serif", url: "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" },
+                { label: "Outfit", value: "'Outfit', sans-serif", url: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" },
+                { label: "Playfair Display", value: "'Playfair Display', serif", url: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" }
               ]
             }
           }}
