@@ -38,6 +38,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new LoginError("INVALID_CREDENTIALS");
         }
 
+        // --- DEVELOPMENT MOCK LOGIN ---
+        if (process.env.NODE_ENV === "development" && credentials.password === "test") {
+          if (credentials.email === "admin@test.com") {
+            return {
+              id: "mock-admin-id",
+              name: "Test Admin",
+              email: "admin@test.com",
+              role: "ADMIN",
+              anweshaId: "ANW-ADMIN",
+              accessToken: "mock-admin-token",
+            };
+          }
+          if (credentials.email === "superadmin@test.com") {
+            return {
+              id: "mock-super-id",
+              name: "Test Super Admin",
+              email: "superadmin@test.com",
+              role: "SUPER_ADMIN",
+              anweshaId: "ANW-SUPER",
+              accessToken: "mock-super-token",
+            };
+          }
+        }
+        // ------------------------------
+
         let response: Response;
 
         try {
