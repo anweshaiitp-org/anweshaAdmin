@@ -54,7 +54,6 @@ export default function EventListPage() {
     setLoading(true);
     setError('');
     try {
-      // Fetch all events without params, we will filter locally
       const res = await fetchEvents();
       if (res.success) {
         let filtered = res.events || [];
@@ -67,11 +66,9 @@ export default function EventListPage() {
             (e.organizer && e.organizer.toLowerCase().includes(lower))
           );
         }
-
         if (tag) {
           filtered = filtered.filter(e => e.tags && e.tags.includes(tag as any));
         }
-
         if (status) {
           const isActive = status === 'active';
           filtered = filtered.filter(e => e.is_active === isActive);
@@ -111,30 +108,26 @@ export default function EventListPage() {
     }
   };
 
-  // ---- Filter handlers (reset page to 1) ----
   const handleSearchChange = (v: string) => { setSearch(v); setPage(1); };
   const handleTagChange = (v: string) => { setTag(v); setPage(1); };
   const handleStatusChange = (v: string) => { setStatus(v); setPage(1); };
 
   // ---- Export Handlers ----
-  const formatOrganizers = (organizer: any) => {
-    return parseOrganizers(organizer).map(([n, r]) => `${n} (${r})`).join(', ');
-  };
-
   const exportToCSV = () => {
     if (!events.length) {
       toast.error('No events to export');
       return;
     }
-    const headers = ['ID', 'Name', 'Organizer', 'Venue', 'Prize', 'Status', 'Online', 'Start Time'];
+    const headers = ['ID', 'Name', 'Organizers', 'Venue', 'Prize', 'Status', 'Start Time'];
     const rows = events.map(e => [
       e.id,
       `"${(e.name || '').replace(/"/g, '""')}"`,
-      `"${formatOrganizers(e.organizer).replace(/"/g, '""')}"`,
-      `"${(e.venue || '').replace(/"/g, '""')}"`,
+      // Format Organizers with newlines
+      `"${parseOrganizers(e.organizer).map(([n, m]) => `${n}: ${m}`).join('\n')}"`,
+      // Combined Venue/Online
+      `"${e.is_online ? 'Online' : (e.venue || 'TBA').replace(/"/g, '""')}"`,
       `"${(e.prize || '').replace(/"/g, '""')}"`,
       e.is_active ? 'Active' : 'Inactive',
-      e.is_online ? 'Online' : 'Offline',
       e.start_time ? new Date(e.start_time).toLocaleString() : ''
     ]);
 
@@ -169,17 +162,18 @@ export default function EventListPage() {
 
       const tableData = events.map(e => [
         e.name,
-        formatOrganizers(e.organizer),
-        e.venue || 'TBA',
+        // Format Organizers with newlines
+        parseOrganizers(e.organizer).map(([n, m]) => `${n}: ${m}`).join('\n'),
+        // Combined Venue/Online
+        e.is_online ? 'Online' : (e.venue || 'TBA'),
         e.prize || '-',
         e.is_active ? 'Active' : 'Inactive',
-        e.is_online ? 'Online' : 'Offline',
         e.start_time ? new Date(e.start_time).toLocaleDateString() : '-'
       ]);
 
       autoTable(doc, {
         startY: 35,
-        head: [['Name', 'Organizer', 'Venue', 'Prize', 'Status', 'Mode', 'Start Date']],
+        head: [['Name', 'Organizers', 'Venue', 'Prize', 'Status', 'Start Date']],
         body: tableData,
         theme: isDarkMode ? 'grid' : 'striped',
         styles: { fontSize: 9 },

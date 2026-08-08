@@ -1,18 +1,19 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { FiEye, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import type { Event } from '@/types/events';
+import { parseOrganizers } from '@/lib/eventService';
 
 interface EventTableProps {
   events: Event[];
-  onDelete: (event: Event) => void;
+  onDelete: (event: Event) => void; 
 }
 
-export default function EventTable({ events, onDelete }: EventTableProps) {
+export default function EventTable({ events }: EventTableProps) {
   const { isDarkMode } = useAuth();
+  const router = useRouter();
 
   const formatDate = (iso?: string) => {
     if (!iso) return '—';
@@ -23,13 +24,15 @@ export default function EventTable({ events, onDelete }: EventTableProps) {
     });
   };
 
+  const headers = ['Name', 'Tags', 'Status', 'Venue', 'Date', 'Fee', 'Organizers'];
+
   return (
     <div className={`rounded-2xl border overflow-hidden ${isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-white'}`}>
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className={isDarkMode ? 'bg-gray-900/50' : 'bg-[#EFF6FF]/50'}>
-              {['Name', 'Tags', 'Status', 'Mode', 'Date', 'Fee', 'Actions'].map((h) => (
+              {headers.map((h) => (
                 <th
                   key={h}
                   className={`px-5 py-3.5 text-xs font-bold uppercase tracking-wider ${
@@ -45,18 +48,16 @@ export default function EventTable({ events, onDelete }: EventTableProps) {
             {events.map((event) => (
               <tr
                 key={event.id}
-                className={`transition-colors ${isDarkMode ? 'hover:bg-gray-700/30' : 'hover:bg-[#EFF6FF]/20'}`}
+                onClick={() => router.push(`/admin/events/${encodeURIComponent(event.id)}`)}
+                className={`transition-colors cursor-pointer ${
+                  isDarkMode ? 'hover:bg-gray-700/50' : 'hover:bg-[#EFF6FF]/40'
+                }`}
               >
-                {/* Name */}
+                {/* Name (ID Removed) */}
                 <td className="px-5 py-4">
                   <div className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     {event.name}
                   </div>
-                  {event.venue && (
-                    <div className={`text-xs mt-0.5 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                      📍 {event.venue}
-                    </div>
-                  )}
                 </td>
 
                 {/* Tags */}
@@ -94,9 +95,9 @@ export default function EventTable({ events, onDelete }: EventTableProps) {
                   </span>
                 </td>
 
-                {/* Mode */}
+                {/* Venue */}
                 <td className={`px-5 py-4 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {event.is_online ? '🌐 Online' : '🏛️ Offline'}
+                  {event.is_online ? '🌐 Online' : event.venue ? `📍 ${event.venue}` : 'TBA'}
                 </td>
 
                 {/* Date */}
@@ -113,36 +114,23 @@ export default function EventTable({ events, onDelete }: EventTableProps) {
                   )}
                 </td>
 
-                {/* Actions */}
+                {/* Organizers (Cleaned up formatting) */}
                 <td className="px-5 py-4">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/admin/events/${encodeURIComponent(event.id)}`}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isDarkMode ? 'hover:bg-gray-700 text-blue-400' : 'hover:bg-blue-50 text-[#2563EB]'
-                      }`}
-                      title="View"
-                    >
-                      <FiEye size={16} />
-                    </Link>
-                    <Link
-                      href={`/admin/events/${encodeURIComponent(event.id)}/edit`}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isDarkMode ? 'hover:bg-gray-700 text-indigo-400' : 'hover:bg-indigo-50 text-indigo-600'
-                      }`}
-                      title="Edit"
-                    >
-                      <FiEdit2 size={16} />
-                    </Link>
-                    <button
-                      onClick={() => onDelete(event)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isDarkMode ? 'hover:bg-gray-700 text-red-400' : 'hover:bg-red-50 text-red-500'
-                      }`}
-                      title="Delete"
-                    >
-                      <FiTrash2 size={16} />
-                    </button>
+                  <div className="flex flex-col gap-1">
+                    {parseOrganizers(event.organizer).map(([name, mobile], idx) => {
+                      // Strip out JSON brackets, quotes, and escape characters from bad inputs
+                      const cleanName = name?.replace(/[\[\]"\\]/g, '').trim();
+                      const cleanMobile = mobile?.replace(/[\[\]"\\]/g, '').trim();
+                      
+                      if (!cleanName && !cleanMobile) return null;
+
+                      return (
+                        <span key={idx} className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          <strong className={isDarkMode ? 'text-gray-100' : 'text-gray-900'}>{cleanName}</strong>
+                          {cleanMobile ? `:${cleanMobile}` : ''}
+                        </span>
+                      );
+                    })}
                   </div>
                 </td>
               </tr>
