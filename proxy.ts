@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { auth } from "./auth";
-import { signOut } from 'next-auth/react';
 
 const ALLOWED_ROLES = [
   "MODERATOR",
@@ -45,8 +44,12 @@ export default auth(async(req) => {
 
   // Logged in but not allowed
   if (!role || !ALLOWED_ROLES.includes(role)) {
-    await signOut();
-    return NextResponse.redirect(new URL("/login", nextUrl));
+    const response = NextResponse.redirect(new URL("/login", nextUrl));
+    response.cookies.delete("authjs.session-token");
+    response.cookies.delete("__Secure-authjs.session-token");
+    response.cookies.delete("next-auth.session-token");
+    response.cookies.delete("__Secure-next-auth.session-token");
+    return response;
   }
 
   return NextResponse.next();
