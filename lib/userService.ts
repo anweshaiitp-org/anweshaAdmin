@@ -10,14 +10,16 @@ const BASE = '/api/admin/users';
 export async function fetchUsers(params?: {
   limit?: number;
   lastKey?: string;
-  email?: string;
-  anweshaId?: string;
+  search?: string;
+  role?: string;
+  college?: string;
 }): Promise<UserListResponse> {
   const sp = new URLSearchParams();
   if (params?.limit) sp.set('limit', String(params.limit));
   if (params?.lastKey) sp.set('lastKey', params.lastKey);
-  if (params?.email) sp.set('email', params.email);
-  if (params?.anweshaId) sp.set('anweshaId', params.anweshaId);
+  if (params?.search) sp.set('search', params.search);
+  if (params?.role) sp.set('role', params.role);
+  if (params?.college) sp.set('college', params.college);
 
   const url = sp.toString() ? `${BASE}?${sp.toString()}` : BASE;
   const res = await fetch(url, { cache: 'no-store' });
@@ -95,6 +97,15 @@ export async function sendBroadcastEmail(anweshaIds: string[], subject: string, 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
     throw new Error(error.message || 'Failed to send broadcast email');
+  }
+  return res.json();
+}
+
+export async function fetchUserDashboard(): Promise<any> {
+  const res = await fetch(`${BASE}/dashboard`, { cache: 'no-store' });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to fetch user dashboard data');
   }
   return res.json();
 }

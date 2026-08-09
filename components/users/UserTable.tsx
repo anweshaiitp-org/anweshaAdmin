@@ -1,16 +1,14 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { User } from '@/types/users';
-import { FiEdit, FiTrash2, FiEye, FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi';
+import { FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi';
 
 interface UserTableProps {
   users: User[];
   selectedUserIds: string[];
   onSelectUser: (id: string) => void;
   onSelectAll: (checked: boolean) => void;
-  onViewDetails: (user: User) => void;
-  onEdit: (user: User) => void;
-  onDelete: (user: User) => void;
   isLoading: boolean;
 }
 
@@ -19,12 +17,10 @@ export default function UserTable({
   selectedUserIds,
   onSelectUser,
   onSelectAll,
-  onViewDetails,
-  onEdit,
-  onDelete,
   isLoading
 }: UserTableProps) {
   const { isDarkMode, user: authUser } = useAuth();
+  const router = useRouter();
   
   const allSelected = users.length > 0 && selectedUserIds.length === users.length;
 
@@ -62,21 +58,21 @@ export default function UserTable({
               <th className={`p-4 text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>User</th>
               <th className={`p-4 text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Role</th>
               <th className={`p-4 text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>College</th>
-              <th className={`p-4 text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Status</th>
-              <th className={`p-4 text-xs font-bold uppercase tracking-wider text-right ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Actions</th>
+              <th className={`p-4 text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>ID Card</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
               <tr 
-                key={user.id} 
-                className={`border-b last:border-0 transition-colors ${
+                key={user.id}
+                onClick={() => router.push(`/admin/users?userId=${encodeURIComponent(user.id)}`)}
+                className={`border-b last:border-0 transition-colors cursor-pointer ${
                   isDarkMode 
                     ? 'border-gray-700 hover:bg-gray-750' 
                     : 'border-gray-100 hover:bg-gray-50'
                 }`}
               >
-                <td className="p-4">
+                <td className="p-4" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={selectedUserIds.includes(user.id)}
@@ -86,7 +82,11 @@ export default function UserTable({
                 </td>
                 <td className="p-4">
                   <div className="flex flex-col">
-                    <span className={`font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>{user.full_name}</span>
+                    <div className="flex items-center gap-1">
+                      <span className={`font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>{user.full_name}</span>
+                      {user.is_email_verified && <FiCheckCircle className="text-emerald-500" title="Email Verified" size={14} />}
+                      {user.is_locked && <FiXCircle className="text-red-500" title="Account Locked" size={14} />}
+                    </div>
                     <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user.email_id}</span>
                     {user.anwesha_id && (
                       <span className="text-xs font-mono text-blue-500 mt-1">{user.anwesha_id}</span>
@@ -95,10 +95,10 @@ export default function UserTable({
                 </td>
                 <td className="p-4">
                   <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
-                    user.role === 'SUPER_ADMIN' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                    user.role === 'ADMIN' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                    user.role === 'MODERATOR' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                    'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    user.role === 'SUPER_ADMIN' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' :
+                    user.role === 'ADMIN' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' :
+                    user.role === 'MODERATOR' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300' :
+                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                   }`}>
                     {user.role}
                   </span>
@@ -107,29 +107,14 @@ export default function UserTable({
                   <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{user.college_name || '-'}</span>
                 </td>
                 <td className="p-4">
-                  <div className="flex items-center gap-1">
-                    {user.is_email_verified ? (
-                      <FiCheckCircle className="text-emerald-500" title="Email Verified" />
-                    ) : (
-                      <FiClock className="text-amber-500" title="Email Unverified" />
-                    )}
-                    {user.is_locked && (
-                      <FiXCircle className="text-red-500" title="Account Locked" />
-                    )}
-                  </div>
-                </td>
-                <td className="p-4 text-right space-x-2">
-                  <button onClick={() => onViewDetails(user)} className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" title="View Details">
-                    <FiEye size={18} />
-                  </button>
-                  <button onClick={() => onEdit(user)} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Edit User">
-                    <FiEdit size={18} />
-                  </button>
-                  {authUser?.role === 'SUPER_ADMIN' && (
-                    <button onClick={() => onDelete(user)} className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete User">
-                      <FiTrash2 size={18} />
-                    </button>
-                  )}
+                  <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
+                    user.id_card_status === 'VERIFIED' || user.id_card_status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                    user.id_card_status === 'REQUESTED' || user.id_card_status === 'UPLOADED' || user.id_card_status === 'PENDING' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' :
+                    user.id_card_status === 'REJECTED' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
+                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                  }`}>
+                    {user.id_card_status?.replace('_', ' ') || 'NOT REQUESTED'}
+                  </span>
                 </td>
               </tr>
             ))}

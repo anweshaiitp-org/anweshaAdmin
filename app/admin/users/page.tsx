@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 import { User, InviteUserPayload, UpdateUserPayload, VerifyIdPayload } from '@/types/users';
 import { fetchUsers, inviteUser, updateUser, deleteUser, requestIdCard, verifyIdCard, sendBroadcastEmail } from '@/lib/userService';
 import UserTable from '@/components/users/UserTable';
@@ -18,6 +20,10 @@ import autoTable from 'jspdf-autotable';
 
 export default function UsersDashboard() {
   const { isDarkMode, user: authUser } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const urlUserId = searchParams.get('userId');
   
   // State
   const [users, setUsers] = useState<User[]>([]);
@@ -28,8 +34,11 @@ export default function UsersDashboard() {
   const [limit, setLimit] = useState(20);
   const [lastKey, setLastKey] = useState<string | undefined>(undefined);
   const [nextLastKey, setNextLastKey] = useState<string | undefined>(undefined);
-  const [emailSearch, setEmailSearch] = useState('');
-  const [anweshaIdSearch, setAnweshaIdSearch] = useState('');
+  const [pageHistory, setPageHistory] = useState<(string | undefined)[]>([undefined]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [collegeFilter, setCollegeFilter] = useState('');
   
   // Modals / Drawer State
   const [drawerUser, setDrawerUser] = useState<User | null>(null);
@@ -41,15 +50,15 @@ export default function UsersDashboard() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
 
-  const loadUsers = async (resetLastKey = false) => {
+  const loadUsers = async (currentLastKey?: string) => {
     setLoading(true);
     try {
-      const currentLastKey = resetLastKey ? undefined : lastKey;
       const res = await fetchUsers({
         limit,
         lastKey: currentLastKey,
-        email: emailSearch.trim() || undefined,
-        anweshaId: anweshaIdSearch.trim().toUpperCase() || undefined,
+        search: searchQuery.trim() || undefined,
+        role: roleFilter || undefined,
+        college: collegeFilter.trim() || undefined,
       });
       if (res.success) {
         setUsers(res.users || []);
@@ -63,37 +72,60 @@ export default function UsersDashboard() {
     }
   };
 
+  // Debounced search & filter effect
   useEffect(() => {
-    loadUsers(true);
-  }, [limit]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+    // Reset to page 0 on filter change
+    setPageHistory([undefined]);
+    setCurrentPageIndex(0);
     setLastKey(undefined);
-    loadUsers(true);
+    
+    const handler = setTimeout(() => {
+      loadUsers(undefined);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery, roleFilter, collegeFilter, limit]);
+
+  // Synchronize drawer with URL
+  useEffect(() => {
+    if (urlUserId && users.length > 0) {
+      const u = users.find(x => x.id === urlUserId);
+      if (u) {
+        setDrawerUser(u);
+      }
+    } else if (!urlUserId && drawerUser) {
+      setDrawerUser(null);
+    }
+  }, [urlUserId, users]);
+
+  const closeDrawer = () => {
+    setDrawerUser(null);
+    if (urlUserId) {
+      router.push(pathname, { scroll: false });
+    }
   };
 
   const handleNextPage = () => {
     if (nextLastKey) {
+      const nextIndex = currentPageIndex + 1;
+      const newHistory = [...pageHistory];
+      if (newHistory.length <= nextIndex) {
+        newHistory.push(nextLastKey);
+      }
+      setPageHistory(newHistory);
+      setCurrentPageIndex(nextIndex);
       setLastKey(nextLastKey);
-      // Wait for state to update, then load users. Actually it's better to pass it directly.
-      setLoading(true);
-      fetchUsers({
-        limit,
-        lastKey: nextLastKey,
-        email: emailSearch.trim() || undefined,
-        anweshaId: anweshaIdSearch.trim().toUpperCase() || undefined,
-      }).then(res => {
-        if (res.success) {
-          setUsers(res.users || []);
-          setNextLastKey(res.pagination?.nextLastKey);
-          setSelectedIds([]);
-        }
-      }).catch(err => {
-        toast.error(err.message || 'Failed to fetch next page');
-      }).finally(() => {
-        setLoading(false);
-      });
+      loadUsers(nextLastKey);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPageIndex > 0) {
+      const prevIndex = currentPageIndex - 1;
+      setCurrentPageIndex(prevIndex);
+      const prevKey = pageHistory[prevIndex];
+      setLastKey(prevKey);
+      loadUsers(prevKey);
     }
   };
 
@@ -125,6 +157,7 @@ export default function UsersDashboard() {
         const res = await deleteUser(user.id);
         if (res.success) {
           toast.success('User deleted successfully!');
+          closeDrawer();
           loadUsers(true);
         }
       } catch (err: any) {
@@ -150,7 +183,7 @@ export default function UsersDashboard() {
       const res = await verifyIdCard(verifyIdUser.id, data);
       if (res.success) {
         toast.success(`ID Card ${data.action.toLowerCase()}ed!`);
-        setDrawerUser(null);
+        closeDrawer();
         loadUsers(true);
       }
     } catch (err: any) {
@@ -260,48 +293,64 @@ export default function UsersDashboard() {
             <FiDownload size={16} /> Export
           </button>
 
-          <button
-            onClick={() => setFormModalState({ isOpen: true, mode: 'invite' })}
+          <Link
+            href="/admin/users/invite"
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all ${
               isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-[#2563EB] hover:bg-[#1D4ED8]'
             }`}
           >
             <FiUserPlus size={16} /> Invite User
-          </button>
+          </Link>
         </div>
       </div>
 
       {/* Toolbar / Filters */}
       <div className={`p-4 rounded-2xl border flex flex-col md:flex-row gap-4 justify-between items-center ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-        <form onSubmit={handleSearch} className="flex flex-1 gap-3 w-full md:w-auto">
-          <div className="relative flex-1 max-w-xs">
+        <div className="flex flex-1 gap-3 w-full md:w-auto">
+          <div className="relative flex-1 max-w-md">
             <FiSearch className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
             <input 
               type="text" 
-              placeholder="Search by Email" 
-              value={emailSearch}
-              onChange={(e) => setEmailSearch(e.target.value)}
+              placeholder="Search with name, email, anweshaId" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl border focus:ring-2 outline-none text-sm transition-all ${
                 isDarkMode ? 'bg-gray-900 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
               }`}
             />
           </div>
-          <div className="relative flex-1 max-w-xs">
-            <FiSearch className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-            <input 
-              type="text" 
-              placeholder="Search by Anwesha ID" 
-              value={anweshaIdSearch}
-              onChange={(e) => setAnweshaIdSearch(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border focus:ring-2 outline-none text-sm transition-all ${
-                isDarkMode ? 'bg-gray-900 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-              }`}
-            />
-          </div>
-          <button type="submit" className="hidden" /> {/* Implicit submit */}
-        </form>
+          <div className="flex-1 max-w-xs hidden md:block"></div>
+        </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Role:</span>
+            <select 
+              value={roleFilter} 
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className={`py-2 px-3 rounded-xl border text-sm font-semibold focus:ring-2 outline-none transition-all ${
+                isDarkMode ? 'bg-gray-900 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+              }`}
+            >
+              <option value="">All</option>
+              <option value="USER">USER</option>
+              <option value="MODERATOR">MODERATOR</option>
+              <option value="ADMIN">ADMIN</option>
+              <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>College:</span>
+            <input 
+              type="text"
+              placeholder="College"
+              value={collegeFilter}
+              onChange={(e) => setCollegeFilter(e.target.value)}
+              className={`w-32 py-2 px-3 rounded-xl border text-sm font-semibold focus:ring-2 outline-none transition-all ${
+                isDarkMode ? 'bg-gray-900 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+              }`}
+            />
+          </div>
           <div className="flex items-center gap-2">
             <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Show:</span>
             <select 
@@ -347,38 +396,47 @@ export default function UsersDashboard() {
         onSelectAll={(checked) => {
           setSelectedIds(checked ? users.map(u => u.id) : []);
         }}
-        onViewDetails={(user) => setDrawerUser(user)}
-        onEdit={(user) => setFormModalState({ isOpen: true, mode: 'edit', user })}
-        onDelete={handleDelete}
         isLoading={loading}
       />
 
       {/* Pagination Footer */}
-      {nextLastKey && !loading && (
-        <div className="flex justify-center mt-6">
-          <button 
-            onClick={handleNextPage}
-            className={`px-6 py-2.5 rounded-xl font-bold transition-all ${
-              isDarkMode ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200 shadow-sm'
-            }`}
-          >
-            Load Next Page
-          </button>
-        </div>
-      )}
+      <div className="flex justify-center items-center gap-4 mt-6">
+        <button 
+          onClick={handlePrevPage}
+          disabled={currentPageIndex === 0 || loading}
+          className={`px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+            isDarkMode ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200 shadow-sm'
+          }`}
+        >
+          Previous
+        </button>
+        <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          Page {currentPageIndex + 1}
+        </span>
+        <button 
+          onClick={handleNextPage}
+          disabled={!nextLastKey || loading}
+          className={`px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+            isDarkMode ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200 shadow-sm'
+          }`}
+        >
+          Next
+        </button>
+      </div>
 
       {/* Modals & Drawers */}
       <UserDrawer 
         isOpen={!!drawerUser}
         user={drawerUser}
-        onClose={() => setDrawerUser(null)}
+        onClose={closeDrawer}
         onEdit={(user) => {
-          setDrawerUser(null);
+          closeDrawer();
           setFormModalState({ isOpen: true, mode: 'edit', user });
         }}
+        onDelete={authUser?.role === 'SUPER_ADMIN' ? handleDelete : undefined}
         onRequestId={handleRequestId}
         onVerifyId={(user) => {
-          setDrawerUser(null);
+          closeDrawer();
           setVerifyIdUser(user);
         }}
       />

@@ -8,11 +8,12 @@ interface UserDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit: (user: User) => void;
+  onDelete?: (user: User) => void;
   onVerifyId: (user: User) => void;
   onRequestId: (user: User) => void;
 }
 
-export default function UserDrawer({ user, isOpen, onClose, onEdit, onVerifyId, onRequestId }: UserDrawerProps) {
+export default function UserDrawer({ user, isOpen, onClose, onEdit, onDelete, onVerifyId, onRequestId }: UserDrawerProps) {
   const { isDarkMode } = useAuth();
 
   if (!isOpen || !user) return null;
@@ -123,15 +124,25 @@ export default function UserDrawer({ user, isOpen, onClose, onEdit, onVerifyId, 
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
+          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800 flex gap-3">
             <button 
               onClick={() => onEdit(user)}
-              className={`w-full py-2.5 rounded-xl font-bold transition-colors ${
+              className={`flex-1 py-2.5 rounded-xl font-bold transition-colors ${
                 isDarkMode ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
               }`}
             >
-              Edit User Details
+              Edit Details
             </button>
+            {onDelete && (
+              <button 
+                onClick={() => onDelete(user)}
+                className={`flex-1 py-2.5 rounded-xl font-bold text-white transition-colors ${
+                  isDarkMode ? 'bg-red-900/80 hover:bg-red-800' : 'bg-red-500 hover:bg-red-600'
+                }`}
+              >
+                Delete User
+              </button>
+            )}
           </div>
         </div>
       </div>
