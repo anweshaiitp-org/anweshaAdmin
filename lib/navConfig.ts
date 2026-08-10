@@ -15,5 +15,5 @@ export const sidebarItems = [
   { name: "Accommodation", icon: FiHome, path: "/admin/accommodation" },
   { name: "Payments", icon: FiCreditCard, path: "/admin/payments" },
   { name: "Campus Ambassador", icon: FiAward, path: "/admin/ca" },
-  { name: "Broadcast", icon: FiRadio, path: "/admin/broadcast" },
+  { name: "Broadcast", icon: FiRadio, path: "/admin/broadcast/list" },
 ];
