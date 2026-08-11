@@ -16,7 +16,7 @@ export default auth(async(req) => {
 
   const isLoginRoute = nextUrl.pathname === "/login";
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api");
-  const publicRoutes = ["/loading", "/loadings", "/not-found", "/unauthorised", "/unauthorized"];
+  const publicRoutes = ["/loading", "/loadings", "/not-found", "/unauthorised", "/unauthorized", "/admin/profile"];
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
 
   if (isApiAuthRoute) {
