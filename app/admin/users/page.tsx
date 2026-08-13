@@ -1,29 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import Link from 'next/link';
-import { User, InviteUserPayload, UpdateUserPayload, VerifyIdPayload } from '@/types/users';
-import { fetchUsers, inviteUser, updateUser, deleteUser, requestIdCard, verifyIdCard, sendBroadcastEmail } from '@/lib/userService';
+import { User, InviteUserPayload } from '@/types/users';
+import { fetchUsers, inviteUser, sendBroadcastEmail } from '@/lib/userService';
 import UserTable from '@/components/users/UserTable';
-import UserDrawer from '@/components/users/UserDrawer';
 import UserFormModal from '@/components/users/UserFormModal';
-import IdVerificationModal from '@/components/users/IdVerificationModal';
 import ExportModal, { ExportFormat } from '@/components/users/ExportModal';
 import BroadcastModal from '@/components/users/BroadcastModal';
-import { FiSearch, FiRefreshCw, FiUserPlus, FiDownload, FiTrash2, FiSend } from 'react-icons/fi';
+import { FiSearch, FiRefreshCw, FiUserPlus, FiDownload, FiSend } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function UsersDashboard() {
-  const { isDarkMode, user: authUser } = useAuth();
-  const searchParams = useSearchParams();
+  const { isDarkMode } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-  const urlUserId = searchParams.get('userId');
   
   // State
   const [users, setUsers] = useState<User[]>([]);
@@ -40,13 +34,8 @@ export default function UsersDashboard() {
   const [roleFilter, setRoleFilter] = useState('');
   const [collegeFilter, setCollegeFilter] = useState('');
   
-  // Modals / Drawer State
-  const [drawerUser, setDrawerUser] = useState<User | null>(null);
-  const [formModalState, setFormModalState] = useState<{ isOpen: boolean; mode: 'invite' | 'edit'; user?: User | null }>({
-    isOpen: false,
-    mode: 'invite'
-  });
-  const [verifyIdUser, setVerifyIdUser] = useState<User | null>(null);
+  // Modals State
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
 
@@ -86,25 +75,6 @@ export default function UsersDashboard() {
     return () => clearTimeout(handler);
   }, [searchQuery, roleFilter, collegeFilter, limit]);
 
-  // Synchronize drawer with URL
-  useEffect(() => {
-    if (urlUserId && users.length > 0) {
-      const u = users.find(x => x.id === urlUserId);
-      if (u) {
-        setDrawerUser(u);
-      }
-    } else if (!urlUserId && drawerUser) {
-      setDrawerUser(null);
-    }
-  }, [urlUserId, users]);
-
-  const closeDrawer = () => {
-    setDrawerUser(null);
-    if (urlUserId) {
-      router.push(pathname, { scroll: false });
-    }
-  };
-
   const handleNextPage = () => {
     if (nextLastKey) {
       const nextIndex = currentPageIndex + 1;
@@ -130,64 +100,16 @@ export default function UsersDashboard() {
   };
 
   // Actions
-  const handleInviteOrEdit = async (data: any) => {
+  const handleInvite = async (data: any) => {
     try {
-      if (formModalState.mode === 'invite') {
-        const res = await inviteUser(data as InviteUserPayload);
-        if (res.success) {
-          toast.success('User invited successfully!');
-          loadUsers(true);
-        }
-      } else if (formModalState.user) {
-        const res = await updateUser(formModalState.user.id, data as UpdateUserPayload);
-        if (res.success) {
-          toast.success('User updated successfully!');
-          setDrawerUser(null);
-          loadUsers(true);
-        }
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Operation failed');
-    }
-  };
-
-  const handleDelete = async (user: User) => {
-    if (confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) {
-      try {
-        const res = await deleteUser(user.id);
-        if (res.success) {
-          toast.success('User deleted successfully!');
-          closeDrawer();
-          loadUsers(true);
-        }
-      } catch (err: any) {
-        toast.error(err.message || 'Failed to delete user');
-      }
-    }
-  };
-
-  const handleRequestId = async (user: User) => {
-    try {
-      const res = await requestIdCard(user.id);
+      const res = await inviteUser(data as InviteUserPayload);
       if (res.success) {
-        toast.success('ID Card request sent!');
+        toast.success('User invited successfully!');
+        setIsInviteModalOpen(false);
+        loadUsers(undefined); // Refresh list
       }
     } catch (err: any) {
-      toast.error(err.message || 'Failed to request ID card');
-    }
-  };
-
-  const handleVerifyId = async (data: VerifyIdPayload) => {
-    if (!verifyIdUser) return;
-    try {
-      const res = await verifyIdCard(verifyIdUser.id, data);
-      if (res.success) {
-        toast.success(`ID Card ${data.action.toLowerCase()}ed!`);
-        closeDrawer();
-        loadUsers(true);
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to verify ID card');
+      toast.error(err.message || 'Failed to invite user');
     }
   };
 
@@ -207,6 +129,7 @@ export default function UsersDashboard() {
       if (res.success) {
         toast.success('Broadcast email sent successfully!');
         setSelectedIds([]);
+        setIsBroadcastModalOpen(false);
       }
     } catch (err: any) {
       toast.error(err.message || 'Failed to send broadcast email');
@@ -215,7 +138,6 @@ export default function UsersDashboard() {
 
   // Export
   const getExportData = (selectedColumns: string[]) => {
-    // If there are selected users, export those, otherwise export the current page.
     const dataToExport = selectedIds.length > 0 
       ? users.filter(u => selectedIds.includes(u.id)) 
       : users;
@@ -231,7 +153,11 @@ export default function UsersDashboard() {
       if (selectedColumns.includes('Role')) row['Role'] = u.role;
       if (selectedColumns.includes('Email Verified')) row['Email Verified'] = u.is_email_verified ? 'Yes' : 'No';
       if (selectedColumns.includes('ID Card Status')) row['ID Card Status'] = u.id_card_status || 'NOT_REQUESTED';
-      if (selectedColumns.includes('Registration Time')) row['Registration Time'] = new Date(u.created_at).toLocaleString();
+      
+      const regTime = (u as any).time_of_registration || (u as any).created_at;
+      if (selectedColumns.includes('Registration Time')) {
+        row['Registration Time'] = regTime ? new Date(regTime).toLocaleString() : 'N/A';
+      }
       return row;
     });
   };
@@ -268,7 +194,7 @@ export default function UsersDashboard() {
   };
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-6 pb-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${isDarkMode ? 'text-white' : 'text-[#2563EB]'}`}>
@@ -276,60 +202,57 @@ export default function UsersDashboard() {
         </h1>
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => loadUsers(true)}
-            className={`p-2.5 rounded-xl transition-all ${
-              isDarkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+            onClick={() => loadUsers(lastKey)}
+            className={`p-2.5 rounded-xl transition-all shadow-sm ${
+              isDarkMode ? 'bg-[#1e293b] text-gray-300 hover:bg-slate-700 border border-slate-700' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
             }`}
             title="Refresh List"
           >
-            <FiRefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            <FiRefreshCw size={18} className={loading ? 'animate-spin text-blue-500' : ''} />
           </button>
           
           <button 
             onClick={() => setIsExportModalOpen(true)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              isDarkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm ${
+              isDarkMode ? 'bg-[#1e293b] text-gray-300 hover:bg-slate-700 border border-slate-700' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
             }`}>
             <FiDownload size={16} /> Export
           </button>
 
-          <Link
-            href="/admin/users/invite"
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all ${
-              isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-[#2563EB] hover:bg-[#1D4ED8]'
-            }`}
+          <button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
           >
             <FiUserPlus size={16} /> Invite User
-          </Link>
+          </button>
         </div>
       </div>
 
       {/* Toolbar / Filters */}
-      <div className={`p-4 rounded-2xl border flex flex-col md:flex-row gap-4 justify-between items-center ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-        <div className="flex flex-1 gap-3 w-full md:w-auto">
+      <div className={`p-4 rounded-2xl shadow-sm border flex flex-col xl:flex-row gap-4 justify-between items-center ${isDarkMode ? 'bg-[#1e293b] border-slate-700/50' : 'bg-white border-slate-200'}`}>
+        <div className="flex flex-1 gap-3 w-full xl:w-auto">
           <div className="relative flex-1 max-w-md">
-            <FiSearch className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+            <FiSearch className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
             <input 
               type="text" 
-              placeholder="Search with name, email, anweshaId" 
+              placeholder="Search name, email, or Anwesha ID..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border focus:ring-2 outline-none text-sm transition-all ${
-                isDarkMode ? 'bg-gray-900 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+              className={`w-full pl-11 pr-4 py-2.5 rounded-xl border focus:ring-2 outline-none text-sm font-medium transition-all ${
+                isDarkMode ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white'
               }`}
             />
           </div>
-          <div className="flex-1 max-w-xs hidden md:block"></div>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end flex-wrap">
+        <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-end flex-wrap">
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Role:</span>
+            <span className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Role:</span>
             <select 
               value={roleFilter} 
               onChange={(e) => setRoleFilter(e.target.value)}
-              className={`py-2 px-3 rounded-xl border text-sm font-semibold focus:ring-2 outline-none transition-all ${
-                isDarkMode ? 'bg-gray-900 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+              className={`py-2 px-3 rounded-xl border text-sm font-semibold focus:ring-2 outline-none transition-all cursor-pointer ${
+                isDarkMode ? 'bg-slate-900 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-500 focus:bg-white'
               }`}
             >
               <option value="">All</option>
@@ -340,24 +263,24 @@ export default function UsersDashboard() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>College:</span>
+            <span className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>College:</span>
             <input 
               type="text"
-              placeholder="College"
+              placeholder="Filter..."
               value={collegeFilter}
               onChange={(e) => setCollegeFilter(e.target.value)}
               className={`w-32 py-2 px-3 rounded-xl border text-sm font-semibold focus:ring-2 outline-none transition-all ${
-                isDarkMode ? 'bg-gray-900 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                isDarkMode ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-600 focus:border-blue-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white'
               }`}
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Show:</span>
+            <span className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Show:</span>
             <select 
               value={limit} 
               onChange={(e) => setLimit(Number(e.target.value))}
-              className={`py-2 px-3 rounded-xl border text-sm font-semibold focus:ring-2 outline-none transition-all ${
-                isDarkMode ? 'bg-gray-900 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+              className={`py-2 px-3 rounded-xl border text-sm font-semibold focus:ring-2 outline-none transition-all cursor-pointer ${
+                isDarkMode ? 'bg-slate-900 border-slate-700 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-500 focus:bg-white'
               }`}
             >
               <option value={10}>10</option>
@@ -369,91 +292,76 @@ export default function UsersDashboard() {
         </div>
       </div>
 
-      {/* Selected actions */}
+      {/* Bulk Actions Banner */}
       {selectedIds.length > 0 && (
-        <div className={`p-3 rounded-xl flex flex-wrap items-center justify-between gap-3 ${isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-700'}`}>
-          <span className="text-sm font-bold">{selectedIds.length} users selected</span>
-          <div className="flex items-center gap-3">
+        <div className={`p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 shadow-sm border animate-fadeIn ${
+            isDarkMode ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-700'
+        }`}>
+          <span className="text-sm font-bold flex items-center gap-2">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">{selectedIds.length}</span>
+              Users Selected
+          </span>
+          <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsBroadcastModalOpen(true)}
-              className="flex items-center gap-2 text-sm font-semibold hover:underline"
+              className="flex items-center gap-2 text-sm font-bold hover:text-blue-500 transition-colors"
             >
-              <FiSend size={14} /> Send Email
+              <FiSend size={16} /> Broadcast Email
             </button>
-            <div className="w-px h-4 bg-blue-300 dark:bg-blue-700"></div>
-            <button onClick={() => setSelectedIds([])} className="text-sm font-semibold hover:underline">Clear Selection</button>
+            <div className="w-px h-5 bg-blue-300 dark:bg-blue-700"></div>
+            <button onClick={() => setSelectedIds([])} className="text-sm font-semibold opacity-70 hover:opacity-100 transition-opacity">Clear Selection</button>
           </div>
         </div>
       )}
 
       {/* Table */}
-      <UserTable 
-        users={users}
-        selectedUserIds={selectedIds}
-        onSelectUser={(id) => {
-          setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-        }}
-        onSelectAll={(checked) => {
-          setSelectedIds(checked ? users.map(u => u.id) : []);
-        }}
-        isLoading={loading}
-      />
+      <div className={`rounded-3xl border shadow-sm overflow-hidden ${isDarkMode ? 'border-slate-700/50 bg-[#1e293b]' : 'border-slate-200 bg-white'}`}>
+        <UserTable 
+          users={users}
+          selectedUserIds={selectedIds}
+          onSelectUser={(id) => {
+            setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+          }}
+          onSelectAll={(checked) => {
+            setSelectedIds(checked ? users.map(u => u.id) : []);
+          }}
+          isLoading={loading}
+          // Redirects using the pure system ID, safely encoded for URLs
+          onViewUser={(userId) => router.push(`/admin/users/${encodeURIComponent(userId)}`)} 
+        />
+      </div>
 
       {/* Pagination Footer */}
-      <div className="flex justify-center items-center gap-4 mt-6">
+      <div className="flex justify-center items-center gap-6 mt-8">
         <button 
           onClick={handlePrevPage}
           disabled={currentPageIndex === 0 || loading}
           className={`px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-            isDarkMode ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200 shadow-sm'
+            isDarkMode ? 'bg-[#1e293b] text-white hover:bg-slate-700 border border-slate-700' : 'bg-white text-slate-900 hover:bg-slate-50 border border-slate-200 shadow-sm'
           }`}
         >
           Previous
         </button>
-        <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+        <span className={`text-sm font-semibold px-4 py-2 rounded-lg ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-600'}`}>
           Page {currentPageIndex + 1}
         </span>
         <button 
           onClick={handleNextPage}
           disabled={!nextLastKey || loading}
           className={`px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-            isDarkMode ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200 shadow-sm'
+            isDarkMode ? 'bg-[#1e293b] text-white hover:bg-slate-700 border border-slate-700' : 'bg-white text-slate-900 hover:bg-slate-50 border border-slate-200 shadow-sm'
           }`}
         >
           Next
         </button>
       </div>
 
-      {/* Modals & Drawers */}
-      <UserDrawer 
-        isOpen={!!drawerUser}
-        user={drawerUser}
-        onClose={closeDrawer}
-        onEdit={(user) => {
-          closeDrawer();
-          setFormModalState({ isOpen: true, mode: 'edit', user });
-        }}
-        onDelete={authUser?.role === 'SUPER_ADMIN' ? handleDelete : undefined}
-        onRequestId={handleRequestId}
-        onVerifyId={(user) => {
-          closeDrawer();
-          setVerifyIdUser(user);
-        }}
-      />
-
+      {/* Modals */}
       <UserFormModal 
-        isOpen={formModalState.isOpen}
-        mode={formModalState.mode}
-        initialData={formModalState.user}
-        onClose={() => setFormModalState({ isOpen: false, mode: 'invite' })}
-        onSubmit={handleInviteOrEdit}
-      />
-
-      <IdVerificationModal 
-        isOpen={!!verifyIdUser}
-        user={verifyIdUser}
-        onClose={() => setVerifyIdUser(null)}
-        onSubmit={handleVerifyId}
+        isOpen={isInviteModalOpen}
+        mode="invite"
+        onClose={() => setIsInviteModalOpen(false)}
+        onSubmit={handleInvite}
       />
 
       <ExportModal 

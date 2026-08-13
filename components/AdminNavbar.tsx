@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { FiMenu, FiBell, FiMoon, FiSun, FiUser, FiLogOut } from "react-icons/fi";
+import { FiMenu, FiBell, FiMoon, FiSun, FiUser, FiLogOut, FiLock } from "react-icons/fi";
 import AnweshaLogo from "./AnweshaLogo";
 import { useAuth } from "@/context/AuthContext";
 
@@ -66,6 +66,13 @@ export default function AdminNavbar({ toggleSidebar }: AdminNavbarProps) {
                 className={`w-full text-left px-4 py-2.5 text-sm flex items-center ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
               >
                 <FiUser className="mr-3" size={16} /> Profile
+              </Link>
+              <Link
+                href="/admin/change-password"
+                onClick={() => setIsProfileOpen(false)}
+                className={`w-full text-left px-4 py-2.5 text-sm flex items-center ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+              >
+                <FiLock className="mr-3" size={16} /> Change Password
               </Link>
               <button
                 onClick={logout}
