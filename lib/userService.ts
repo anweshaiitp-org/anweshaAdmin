@@ -16,6 +16,22 @@ import type {
 const BASE = '/api/users';
 const ADMIN_BASE = '/api/admin/users';
 
+const getAuthHeaders = (isFormData = false) => {
+    // Note: In Next.js App Router, if you are calling this from Client Components, 
+    // localStorage is perfectly fine. If using Server Components, use cookies().
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`
+    };
+
+    if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    return headers;
+};
+
 // ==================== USER PROFILE ====================
 
 export async function fetchUserProfile(): Promise<{
@@ -24,6 +40,7 @@ export async function fetchUserProfile(): Promise<{
 }> {
   const res = await fetch(`${BASE}/profile`, {
     cache: 'no-store',
+    headers: getAuthHeaders()
   });
 
   const data = await res.json();
@@ -45,9 +62,7 @@ export async function updateUserProfile(
 }> {
   const res = await fetch(`${BASE}/profile`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -62,6 +77,29 @@ export async function updateUserProfile(
   return resData;
 }
 
+export async function fetchUserFullProfile(
+  userId: string
+): Promise<any> {
+  const res = await fetch(
+    `${ADMIN_BASE}/${encodeURIComponent(userId)}`,
+    {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      cache: 'no-store',
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok || !data.success) {
+    throw new Error(
+      data.message || 'Failed to fetch user full profile'
+    );
+  }
+
+  return data;
+}
+
 export async function getProfileUploadUrl(
   fileName: string,
   contentType: string
@@ -72,7 +110,8 @@ export async function getProfileUploadUrl(
   });
 
   const res = await fetch(
-    `${BASE}/profile/upload-url?${sp.toString()}`
+    `${BASE}/profile/upload-url?${sp.toString()}`,
+    { headers: getAuthHeaders() }
   );
 
   const data = await res.json();
@@ -108,6 +147,7 @@ export async function uploadPhotoToS3(
 export async function fetchProfilePhotoUrl(): Promise<PhotoUrlResponse> {
   const res = await fetch(`${BASE}/profile/photo-url`, {
     cache: 'no-store',
+    headers: getAuthHeaders()
   });
 
   const data = await res.json();
@@ -120,6 +160,29 @@ export async function fetchProfilePhotoUrl(): Promise<PhotoUrlResponse> {
   }
 
   return data;
+}
+
+export async function changeUserPassword(
+    data: ChangePasswordPayload
+): Promise<{
+    success: boolean;
+    message?: string;
+}> {
+    const res = await fetch(`${BASE}/change-password`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+
+    const resData = await res.json();
+
+    if (!res.ok || !resData.success) {
+        throw new Error(
+            resData.message || 'Failed to change password'
+        );
+    }
+
+    return resData;
 }
 
 // ==================== ADMIN USER MANAGEMENT ====================
@@ -159,6 +222,7 @@ export async function fetchUsers(params?: {
 
   const res = await fetch(url, {
     cache: 'no-store',
+    headers: getAuthHeaders()
   });
 
   if (!res.ok) {
@@ -168,6 +232,8 @@ export async function fetchUsers(params?: {
   return res.json();
 }
 
+// --------------------------------
+
 export async function inviteUser(
   data: InviteUserPayload
 ): Promise<{
@@ -176,9 +242,7 @@ export async function inviteUser(
 }> {
   const res = await fetch(`${ADMIN_BASE}/invite`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -204,9 +268,7 @@ export async function updateUser(
     `${ADMIN_BASE}/${encodeURIComponent(userId)}`,
     {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     }
   );
@@ -232,6 +294,7 @@ export async function deleteUser(
     `${ADMIN_BASE}/${encodeURIComponent(userId)}`,
     {
       method: 'DELETE',
+      headers: getAuthHeaders(true) // no Content-Type needed for DELETE
     }
   );
 
@@ -256,6 +319,7 @@ export async function requestIdCard(
     `${ADMIN_BASE}/${encodeURIComponent(userId)}/request-id`,
     {
       method: 'POST',
+      headers: getAuthHeaders(true)
     }
   );
 
@@ -281,9 +345,7 @@ export async function verifyIdCard(
     `${ADMIN_BASE}/${encodeURIComponent(userId)}/verify-id`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     }
   );
@@ -299,6 +361,27 @@ export async function verifyIdCard(
   return res.json();
 }
 
+export async function fetchDocumentUrl(
+  userId: string,
+  type: 'profile' | 'id_card',
+  mode: 'view' | 'download'
+): Promise<{ success: boolean; url: string; message?: string }> {
+  const sp = new URLSearchParams({ type, mode });
+  
+  const res = await fetch(`${ADMIN_BASE}/${encodeURIComponent(userId)}/document?${sp.toString()}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || 'Failed to fetch document URL');
+  }
+
+  return data;
+}
+
 export async function sendBroadcastEmail(
   anweshaIds: string[],
   subject: string,
@@ -309,9 +392,7 @@ export async function sendBroadcastEmail(
 }> {
   const res = await fetch(`${ADMIN_BASE}/broadcast`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify({
       audience: 'SPECIFIC',
       anweshaIds,
@@ -334,6 +415,7 @@ export async function sendBroadcastEmail(
 export async function fetchUserDashboard(): Promise<unknown> {
   const res = await fetch(`${ADMIN_BASE}/dashboard`, {
     cache: 'no-store',
+    headers: getAuthHeaders()
   });
 
   if (!res.ok) {
