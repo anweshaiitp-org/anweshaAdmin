@@ -57,6 +57,14 @@ export default function EventListPage() {
       const res = await fetchEvents();
       if (res.success) {
         let filtered = res.events || [];
+        // Deduplicate events by name to handle any database duplication artifacts
+        const uniqueEventsMap = new Map();
+        filtered.forEach((ev: Event) => {
+          if (!uniqueEventsMap.has(ev.name)) {
+            uniqueEventsMap.set(ev.name, ev);
+          }
+        });
+        filtered = Array.from(uniqueEventsMap.values());
 
         if (search) {
           const lower = search.toLowerCase();

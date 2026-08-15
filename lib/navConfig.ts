@@ -5,13 +5,15 @@ import {
   FiHome, 
   FiCreditCard, 
   FiAward, 
-  FiRadio 
+  FiRadio,
+  FiClipboard
 } from "react-icons/fi";
 
 export const sidebarItems = [
   { name: "Dashboard", icon: FiShield, path: "/admin" }, 
   { name: "User", icon: FiUser, path: "/admin/users" },
   { name: "Events", icon: FiCalendar, path: "/admin/events" },
+  { name: "Registration", icon: FiClipboard, path: "/admin/registration" },
   { name: "Accommodation", icon: FiHome, path: "/admin/accommodation" },
   { name: "Payments", icon: FiCreditCard, path: "/admin/payments" },
   { name: "Campus Ambassador", icon: FiAward, path: "/admin/ca" },
