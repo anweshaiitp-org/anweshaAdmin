@@ -428,3 +428,26 @@ export async function fetchUserDashboard(): Promise<unknown> {
 
   return res.json();
 }
+
+
+// 1. Triggers the backend to generate the ticket and email it to the user
+export async function generateAndEmailTicket(userId: string) {
+    const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/ticket/generate`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to generate ticket');
+    return data;
+}
+
+// 2. Fetches the ticket details and the encrypted QR token instantly for viewing
+export async function fetchUserTicketDetails(userId: string) {
+    const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/ticket`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch ticket details');
+    return data;
+}

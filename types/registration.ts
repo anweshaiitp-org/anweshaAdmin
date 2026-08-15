@@ -1,57 +1,212 @@
-// Solo participant (from admin list response)
+export type PaymentStatus = 'paid' | 'unpaid' | string;
+
+
 export interface SoloParticipant {
+  registration_id: string;
+  user_id: string;
   anwesha_id: string;
+
   full_name: string;
   email_id: string;
   collage_name: string;
   phone_number: string;
-  payment_done: boolean;
-  has_entered: boolean;
+
+  payment_status: PaymentStatus;
+  registration_status: string;
+  has_attended: boolean;
+
+  date_of_registration?: string;
 }
 
-// Team member (nested inside TeamRegistration)
+export interface SoloRegistrationResponse {
+  success: boolean;
+  event_name: string;
+  registration_type: 'solo';
+
+  page: number;
+  limit: number;
+
+  total_registrations: number;
+  total_pages: number;
+
+  data: SoloParticipant[];
+}
+
+
 export interface TeamMember {
+  registration_id: string;
   anwesha_id: string;
+
   full_name: string;
   email_id: string;
-  collage_name: string;
   phone_number: string;
-  is_leader: boolean;
-  has_entered: boolean;
+
+  role: string;
+  has_attended: boolean;
 }
 
-// Team registration entry
+
 export interface TeamRegistration {
   team_id: string;
   team_name: string;
-  leader_id: string;
-  payment_done: boolean;
+
+  leader_user_id: string;
+  leader_anwesha_id: string;
+
+  payment_status: PaymentStatus;
+  registration_status: string;
+
+  date_of_registration?: string;
+
   member_count: number;
   members: TeamMember[];
 }
 
-// Solo event response
-export interface SoloRegistrationResponse {
-  success: boolean;
-  event_name: string;
-  event_id: string;
-  registration_type: 'solo';
-  total_registrations: number;
-  paid_count: number;
-  participants: SoloParticipant[];
-}
-
-// Team event response
 export interface TeamRegistrationResponse {
   success: boolean;
   event_name: string;
-  event_id: string;
   registration_type: 'team';
-  total_teams: number;
-  total_participants: number;
-  paid_teams: number;
-  teams: TeamRegistration[];
+
+  page: number;
+  limit: number;
+
+  total_registrations: number;
+  total_pages: number;
+
+  data: TeamRegistration[];
 }
 
-// Discriminated union for the endpoint response
-export type RegistrationResponse = SoloRegistrationResponse | TeamRegistrationResponse;
+
+export type RegistrationResponse =
+  | SoloRegistrationResponse
+  | TeamRegistrationResponse;
+
+
+export interface GlobalRegistrationItem {
+  registration_type: 'solo' | 'team';
+
+  event_id: string;
+  event_name: string;
+
+  registration_id?: string;
+  user_id?: string;
+  anwesha_id?: string;
+  full_name?: string;
+
+
+  team_id?: string;
+  team_name?: string;
+  leader_anwesha_id?: string;
+  member_count?: number;
+
+  payment_status: PaymentStatus;
+  date_of_registration?: string;
+}
+
+export interface GlobalRegistrationsResponse {
+  success: boolean;
+
+  page: number;
+  limit: number;
+
+  total_registrations: number;
+  total_pages: number;
+
+  data: GlobalRegistrationItem[];
+}
+
+
+
+export interface EventWiseStat {
+  event_id: string;
+  event_name: string;
+
+  type: 'solo' | 'team';
+
+  fee: number;
+
+  total_registrations: number;
+  paid: number;
+  unpaid: number;
+
+  revenue: number;
+
+  is_active: boolean;
+}
+
+export interface GlobalStats {
+  total_registrations: number;
+
+  paid: number;
+  unpaid: number;
+
+  revenue: number;
+
+  solo_event_count: number;
+  team_event_count: number;
+
+  zero_reg_events: string[];
+}
+
+export interface DashboardStatsResponse {
+  success: boolean;
+
+  global_stats: GlobalStats;
+
+  event_wise_stats: EventWiseStat[];
+}
+
+export interface SoloRegistrationRow {
+  registration_id: string;
+  user_id: string;
+  anwesha_id: string;
+  full_name: string;
+  email_id: string;
+  collage_name: string;
+  phone_number: string;
+  payment_status: PaymentStatus;
+  registration_status: string;
+  has_attended: boolean;
+  date_of_registration: string;
+}
+
+export interface EventRegistrationsResponse {
+  success: boolean;
+  event_name: string;
+  registration_type: 'solo' | 'team';
+  page: number;
+  limit: number;
+  total_registrations: number;
+  total_pages: number;
+  data: SoloRegistrationRow[] | any[]; // team rows shape from Flow 2 team branch
+}
+
+export interface TeamDetailsResponse {
+  success: boolean;
+  team: {
+    team_id: string;
+    team_name: string;
+    event_id: string;
+    event_name?: string;
+
+    leader_user_id?: string;
+    leader_anwesha_id?: string;
+
+    payment_status: string;
+    registration_status: string;
+
+    date_of_registration?: string;
+
+    member_count: number;
+
+    members: {
+      registration_id: string;
+      anwesha_id: string;
+      full_name: string;
+      email_id: string;
+      phone_number: string;
+      role: string;
+      has_attended: boolean;
+    }[];
+  };
+}

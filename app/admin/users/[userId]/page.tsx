@@ -9,10 +9,12 @@ import {
     deleteUser,
     verifyIdCard,
     requestIdCard,
-    fetchDocumentUrl
+    fetchDocumentUrl,
+    generateAndEmailTicket,
+    fetchUserTicketDetails
 } from '@/lib/userService';
 import toast from 'react-hot-toast';
-import { FiArrowLeft, FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiLoader, FiAlertCircle, FiX } from 'react-icons/fi';
 
 import ProfileSummary from '@/components/userdetail/ProfileSummary';
 import PersonalInfoSection from '@/components/userdetail/Personalinfosection';
@@ -23,6 +25,7 @@ import DangerZoneSection from '@/components/userdetail/Dangerzonesection';
 import UpdateConfirmModal from '@/components/userdetail/Updateconfirmmodal';
 import RejectIdModal from '@/components/userdetail/Rejectidmodal';
 import EnlargedPhotoModal from '@/components/userdetail/Enlargedphotomodal';
+import TicketSVG from '@/components/TicketView'; 
 
 export default function UserDetailPage() {
     const { isDarkMode, user: authUser } = useAuth();
@@ -49,6 +52,11 @@ export default function UserDetailPage() {
     const [rejectReason, setRejectReason] = useState('');
     const [processingIdAction, setProcessingIdAction] = useState(false);
     const [fetchingDoc, setFetchingDoc] = useState(false);
+
+    // Ticket States
+    const [isGeneratingTicket, setIsGeneratingTicket] = useState(false);
+    const [ticketData, setTicketData] = useState<any>(null);
+    const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
  
     const loadUserData = async () => {
         setLoading(true);
@@ -240,6 +248,32 @@ export default function UserDetailPage() {
             setDeleting(false);
         }
     };
+
+    // --- Ticket handlers ---
+    const handleGenerateTicket = async () => {
+        setIsGeneratingTicket(true);
+        const toastId = toast.loading('Generating & emailing ticket...');
+        try {
+            await generateAndEmailTicket(userId);
+            toast.success('Ticket sent successfully!', { id: toastId });
+        } catch (error: any) {
+            toast.error(error.message, { id: toastId });
+        } finally {
+            setIsGeneratingTicket(false);
+        }
+    };
+
+    const handleViewTicket = async () => {
+        const toastId = toast.loading('Fetching secure ticket...');
+        try {
+            const res = await fetchUserTicketDetails(userId);
+            setTicketData(res.data);
+            setIsTicketModalOpen(true);
+            toast.dismiss(toastId);
+        } catch (error: any) {
+            toast.error(error.message, { id: toastId });
+        }
+    };
  
     if (loading) {
         return (
@@ -302,10 +336,11 @@ export default function UserDetailPage() {
             <ProfileSummary
                 isDark={isDarkMode}
                 profile={profile}
-                festPass={festPass}
                 photoUrl={photoUrl}
                 fetchingPhoto={fetchingDoc}
                 onViewPhoto={() => handleViewDocument('profile')}
+                onGenerateTicket={handleGenerateTicket}
+                onViewTicket={handleViewTicket}
             />
  
             {/* Row 1: Personal Info */}
@@ -376,7 +411,26 @@ export default function UserDetailPage() {
             {enlargedUrl && (
                 <EnlargedPhotoModal url={enlargedUrl} onClose={() => setEnlargedUrl('')} />
             )}
+
+            {/* Ticket SVG Modal */}
+            {isTicketModalOpen && ticketData && (
+                <div className="fixed inset-0 z-[150] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn" onClick={() => setIsTicketModalOpen(false)}>
+                    <div className="relative w-full max-w-5xl flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => setIsTicketModalOpen(false)} className="absolute -top-16 right-0 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition-colors">
+                            <FiX size={28} />
+                        </button>
+                        
+                        <TicketSVG 
+                            name={ticketData.name}
+                            anweshaId={ticketData.anweshaId}
+                            qrToken={ticketData.qrToken}
+                            scheme={ticketData.ticketType.includes('ACC') ? 'garbha_stay' : 'garbha'}
+                        />
+                        
+                        <p className="mt-6 text-white/50 text-sm font-medium">This is a live preview generated from the secure backend.</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
- 
