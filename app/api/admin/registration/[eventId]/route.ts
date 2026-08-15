@@ -29,13 +29,11 @@ export async function GET(
 
   // DEBUG LOGGING
   const responseText = await res.text();
-  console.log(`[Next.js API] Raw response from backend for ${decodedEventId}:`, responseText);
 
   let data;
   try {
     data = JSON.parse(responseText);
   } catch (e) {
-    console.error(`[Next.js API] Failed to parse backend response as JSON for ${decodedEventId}`);
     data = { success: false, message: "Invalid backend response payload" };
   }
 
