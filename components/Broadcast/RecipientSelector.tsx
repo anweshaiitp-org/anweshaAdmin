@@ -29,7 +29,16 @@ export function RecipientSelector({
       fetch("/api/admin/events") // Your public events endpoint
         .then(res => res.json())
         .then(data => {
-          if (data.events) setEvents(data.events);
+          if (data.events) {
+            const rawEvents = data.events;
+            const uniqueEventsMap = new Map();
+            rawEvents.forEach((ev: any) => {
+              if (!uniqueEventsMap.has(ev.name)) {
+                uniqueEventsMap.set(ev.name, ev);
+              }
+            });
+            setEvents(Array.from(uniqueEventsMap.values()));
+          }
         })
         .catch(() => toast.error("Failed to load events"));
     }
