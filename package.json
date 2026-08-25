@@ -12,6 +12,7 @@
     "@tailwindcss/typography": "^0.5.20",
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
+    "@yudiel/react-qr-scanner": "^2.6.0",
     "axios": "^1.18.0",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.42.0",
