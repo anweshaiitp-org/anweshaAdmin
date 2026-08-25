@@ -5,6 +5,7 @@ const ALLOWED_ROLES = [
   "MODERATOR",
   "ADMIN",
   "SUPER_ADMIN",
+  "VOLUNTEER",
 ];
 
 export default auth(async(req) => {
