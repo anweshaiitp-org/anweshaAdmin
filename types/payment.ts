@@ -1,12 +1,18 @@
-export type PaymentPurpose = 'FEST_PASS' | 'SOLO_EVENT' | 'TEAM_EVENT' | 'ACCOMMODATION' | 'MERCHANDISE';
-export type PaymentStatus = 'PAID' | 'UNPAID' | 'FAILED' | 'PENDING';
+export type PaymentPurpose = 'SPECIAL_EVENT' | 'FEST_PASS' | 'SOLO_EVENT' | 'TEAM_EVENT' | 'ACCOMMODATION' | 'MERCHANDISE';
+export type PaymentStatus = 'PAID' | 'UNPAID' | 'FAILED' | 'PENDING' | 'CANCELLED';
 
 export interface PaymentRecord {
   paymentId: string;
+  merch_txn_id?: string;
   domain: PaymentPurpose;
+  event_id?: string;
+  team_id?: string;
   amount: number;
+  amount_paid?: number;
   payment_status: PaymentStatus;
   payment_mode?: string;
+  bank_name?: string;
+  failure_reason?: string;
   full_name: string;
   anwesha_id: string;
   created_at: string;

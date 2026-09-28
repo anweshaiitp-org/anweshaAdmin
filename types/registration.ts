@@ -87,6 +87,8 @@ export interface GlobalRegistrationItem {
 
   event_id: string;
   event_name: string;
+  is_special?: boolean;
+  special_event_type?: string;
 
   registration_id?: string;
   user_id?: string;
@@ -132,6 +134,8 @@ export interface EventWiseStat {
   revenue: number;
 
   is_active: boolean;
+  is_special?: boolean;
+  special_event_type?: string;
 }
 
 export interface GlobalStats {
@@ -144,6 +148,9 @@ export interface GlobalStats {
 
   solo_event_count: number;
   team_event_count: number;
+  special_event_count?: number;
+  special_event_registrations?: number;
+  special_event_revenue?: number;
 
   zero_reg_events: string[];
 }

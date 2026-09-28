@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { fetchEvents, deleteEvent as deleteEventApi, parseOrganizers } from '@/lib/eventService';
+import { fetchEvents, fetchSpecialEvents, deleteEvent as deleteEventApi, parseOrganizers } from '@/lib/eventService';
 import type { Event } from '@/types/events';
+import { SpecialEventType } from '@/types/events';
 import EventTable from '@/components/events/EventTable';
 import EventFilters from '@/components/events/EventFilters';
 import Pagination from '@/components/events/Pagination';
@@ -14,7 +15,7 @@ import EmptyState from '@/components/events/EmptyState';
 import ErrorState from '@/components/events/ErrorState';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiStar, FiCalendar, FiLayers } from 'react-icons/fi';
 
 const PAGE_SIZE = 20;
 
@@ -28,6 +29,8 @@ export default function EventListPage() {
   const [tag, setTag] = useState(searchParams.get('tag') || '');
   const [status, setStatus] = useState(searchParams.get('status') || '');
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'));
+  const [eventTypeTab, setEventTypeTab] = useState<'ALL' | 'REGULAR' | 'SPECIAL'>('ALL');
+  const [specialTypeFilter, setSpecialTypeFilter] = useState<string>('ALL');
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,42 +57,57 @@ export default function EventListPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetchEvents();
-      if (res.success) {
-        let filtered = res.events || [];
-        // Deduplicate events by name to handle any database duplication artifacts
-        const uniqueEventsMap = new Map();
-        filtered.forEach((ev: Event) => {
-          if (!uniqueEventsMap.has(ev.name)) {
-            uniqueEventsMap.set(ev.name, ev);
-          }
-        });
-        filtered = Array.from(uniqueEventsMap.values());
+      let combined: Event[] = [];
 
-        if (search) {
-          const lower = search.toLowerCase();
-          filtered = filtered.filter(e =>
-            e.name.toLowerCase().includes(lower) ||
-            (e.id && e.id.toLowerCase().includes(lower)) ||
-            (e.organizer && e.organizer.toLowerCase().includes(lower))
-          );
-        }
-        if (tag) {
-          filtered = filtered.filter(e => e.tags && e.tags.includes(tag as any));
-        }
-        if (status) {
-          const isActive = status === 'active';
-          filtered = filtered.filter(e => e.is_active === isActive);
-        }
-
-        setEvents(filtered);
+      if (eventTypeTab === 'ALL') {
+        const [regRes, specRes] = await Promise.all([
+          fetchEvents().catch(() => ({ success: true, events: [] })),
+          fetchSpecialEvents().catch(() => ({ success: true, events: [] }))
+        ]);
+        combined = [...(regRes.events || []), ...(specRes.events || [])];
+      } else if (eventTypeTab === 'SPECIAL') {
+        const specRes = await fetchSpecialEvents({ type: specialTypeFilter !== 'ALL' ? specialTypeFilter : undefined });
+        combined = specRes.events || [];
+      } else {
+        const regRes = await fetchEvents();
+        combined = regRes.events || [];
       }
+
+      // Deduplicate events by id / name
+      const uniqueEventsMap = new Map();
+      combined.forEach((ev: Event) => {
+        if (!uniqueEventsMap.has(ev.id || ev.name)) {
+          uniqueEventsMap.set(ev.id || ev.name, ev);
+        }
+      });
+      let filtered = Array.from(uniqueEventsMap.values());
+
+      if (search) {
+        const lower = search.toLowerCase();
+        filtered = filtered.filter(e =>
+          e.name.toLowerCase().includes(lower) ||
+          (e.id && e.id.toLowerCase().includes(lower)) ||
+          (e.organizer && e.organizer.toLowerCase().includes(lower))
+        );
+      }
+      if (tag) {
+        filtered = filtered.filter(e => e.tags && e.tags.includes(tag as any));
+      }
+      if (status) {
+        const isActive = status === 'active';
+        filtered = filtered.filter(e => e.is_active === isActive);
+      }
+      if (eventTypeTab === 'SPECIAL' && specialTypeFilter !== 'ALL') {
+        filtered = filtered.filter(e => e.special_event_type === specialTypeFilter);
+      }
+
+      setEvents(filtered);
     } catch (err: any) {
       setError(err.message || 'Failed to load events');
     } finally {
       setLoading(false);
     }
-  }, [tag, status, search]);
+  }, [eventTypeTab, specialTypeFilter, tag, status, search]);
 
   useEffect(() => {
     load();
@@ -229,6 +247,63 @@ export default function EventListPage() {
             <FiPlus size={16} /> Create Event
           </Link>
         </div>
+      </div>
+
+      {/* Event Type Tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-700/60 pb-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setEventTypeTab('ALL'); setPage(1); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+              eventTypeTab === 'ALL'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : isDarkMode ? 'bg-gray-800 text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <FiLayers className="w-4 h-4" /> All Events
+          </button>
+          <button
+            onClick={() => { setEventTypeTab('REGULAR'); setPage(1); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+              eventTypeTab === 'REGULAR'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : isDarkMode ? 'bg-gray-800 text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <FiCalendar className="w-4 h-4" /> Regular Events
+          </button>
+          <button
+            onClick={() => { setEventTypeTab('SPECIAL'); setPage(1); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+              eventTypeTab === 'SPECIAL'
+                ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                : isDarkMode ? 'bg-gray-800 text-purple-400 hover:text-purple-300' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+            }`}
+          >
+            <FiStar className="w-4 h-4" /> Special Events & Passes
+          </button>
+        </div>
+
+        {eventTypeTab === 'SPECIAL' && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400">Filter Type:</span>
+            <select
+              value={specialTypeFilter}
+              onChange={(e) => { setSpecialTypeFilter(e.target.value); setPage(1); }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg border outline-none ${
+                isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-800'
+              }`}
+            >
+              <option value="ALL">All Special Types</option>
+              <option value={SpecialEventType.FEST_PASS}>FEST PASS</option>
+              <option value={SpecialEventType.GARBA}>GARBA</option>
+              <option value={SpecialEventType.PRONITE}>PRONITE</option>
+              <option value={SpecialEventType.FLAGSHIP}>FLAGSHIP</option>
+              <option value={SpecialEventType.FEST}>FEST</option>
+              <option value={SpecialEventType.OTHER}>OTHER</option>
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
