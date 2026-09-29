@@ -1,4 +1,4 @@
-import type { PaymentAnalyticsResponse, PaymentListResponse } from '@/types/payment';
+import type { PaymentAnalyticsResponse, PaymentListResponse, PaymentDetailResponse } from '@/types/payment';
 
 // Assumes you have created Next.js App Router API routes that call your Lambda/Backend
 export const fetchPaymentAnalytics = async (): Promise<PaymentAnalyticsResponse> => {
@@ -26,5 +26,14 @@ export const fetchPaymentList = async (params: PaymentListFilterParams = {}): Pr
 
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error('Failed to fetch payment list');
+  return res.json();
+};
+
+export const fetchPaymentDetails = async (paymentId: string): Promise<PaymentDetailResponse> => {
+  const res = await fetch(`/api/admin/payment/${encodeURIComponent(paymentId)}`);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.message || 'Failed to fetch payment details');
+  }
   return res.json();
 };

@@ -16,6 +16,8 @@ import ErrorState from '@/components/events/ErrorState';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { FiPlus, FiStar, FiCalendar, FiLayers } from 'react-icons/fi';
+import ExportDropdown from '@/components/common/ExportDropdown';
+import { exportAllEvents } from '@/lib/exportUtils';
 
 const PAGE_SIZE = 20;
 
@@ -222,22 +224,7 @@ export default function EventListPage() {
           All Events
         </h1>
         <div className="flex items-center gap-3">
-          <button
-            onClick={exportToCSV}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
-              isDarkMode ? 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            Export CSV
-          </button>
-          <button
-            onClick={exportToPDF}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
-              isDarkMode ? 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            Export PDF
-          </button>
+          <ExportDropdown label="Export All Events" onExport={exportAllEvents} />
           <Link
             href="/admin/events/add"
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all ${

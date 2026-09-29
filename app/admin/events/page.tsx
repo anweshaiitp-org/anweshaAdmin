@@ -10,6 +10,8 @@ import {
   FiCalendar, FiCheckCircle, FiXCircle, FiGlobe, FiMapPin, FiUsers, FiUser,
   FiDollarSign, FiPlus, FiList, FiStar, FiBarChart2,
 } from 'react-icons/fi';
+import ExportDropdown from '@/components/common/ExportDropdown';
+import { exportAllEvents } from '@/lib/exportUtils';
 
 /* NOTE: only gray / blue / cyan / emerald / amber / purple palettes are used,
    since these are the ones defined in this project's Tailwind setup. */
@@ -146,7 +148,8 @@ export default function EventsDashboard() {
           </h1>
           <p className={`text-sm mt-1 ${t.muted}`}>Event counts, special passes, participation and venues.</p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <ExportDropdown label="Export All Events" onExport={exportAllEvents} />
           <Link
             href="/admin/events/list"
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${t.ghostBtn}`}

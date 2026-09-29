@@ -23,6 +23,8 @@ import ErrorState from '@/components/events/ErrorState';
 import EmptyState from '@/components/events/EmptyState';
 import { TableSkeleton, CardSkeleton } from '@/components/events/EventLoadingSkeleton';
 import Link from 'next/link';
+import ExportDropdown from '@/components/common/ExportDropdown';
+import { exportAllRegistrations, exportEventRegistrations } from '@/lib/exportUtils';
 
 const PAGE_SIZE = 20;
 type ViewMode = 'all' | 'eventwise';
@@ -210,7 +212,18 @@ function RegistrationEventsPage() {
             Registrations
           </h1>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {view === 'all' && (
+            <ExportDropdown label="Export All Registrations" onExport={exportAllRegistrations} />
+          )}
+          {view === 'eventwise' && eventId && eventData && (
+            <ExportDropdown
+              label={`Export ${eventData.event_name || 'Event'} Regs`}
+              onExport={(format, onProgress) =>
+                exportEventRegistrations(eventId, eventData.event_name || eventId, format, onProgress)
+              }
+            />
+          )}
           <TabButton mode="all" icon={FiList} label="All Registrations" />
           <TabButton mode="eventwise" icon={FiGrid} label="Event-wise" />
         </div>

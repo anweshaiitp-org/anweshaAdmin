@@ -14,8 +14,16 @@ import toast from 'react-hot-toast';
 import {
   FiUsers, FiDollarSign, FiSend, FiStar, FiCheckCircle, FiAlertTriangle, FiRefreshCw,
   FiShield, FiServer, FiMail, FiCpu, FiTerminal, FiArrowRight, FiClock, FiLayers,
-  FiPlus, FiCreditCard, FiAward, FiX,
+  FiPlus, FiCreditCard, FiAward, FiX, FiDownload,
 } from 'react-icons/fi';
+import PaymentDetailsModal from '@/components/payment/PaymentDetailsModal';
+import ExportDropdown from '@/components/common/ExportDropdown';
+import {
+  exportAllUsers,
+  exportAllRegistrations,
+  exportAllEvents,
+  exportAllPayments
+} from '@/lib/exportUtils';
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -101,6 +109,10 @@ export default function IntegratedAdminDashboard() {
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [broadcastConfirmed, setBroadcastConfirmed] = useState(false);
+
+  // Payment Details Modal
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   /* ---- Theme tokens (blue scheme) ---- */
   const t = useMemo(
@@ -508,11 +520,18 @@ export default function IntegratedAdminDashboard() {
           ) : (
             <ul className="space-y-3">
               {recentPayments.map((pmt) => (
-                <li key={pmt.paymentId} className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-colors ${t.inner}`}>
+                <li 
+                  key={pmt.paymentId} 
+                  onClick={() => {
+                    setSelectedPaymentId(pmt.paymentId);
+                    setIsPaymentModalOpen(true);
+                  }}
+                  className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-colors cursor-pointer group ${t.inner}`}
+                >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 min-w-0">
                       <DomainBadge domain={pmt.domain} />
-                      <span className={`text-sm font-semibold truncate ${t.title}`}>
+                      <span className={`text-sm font-semibold truncate group-hover:underline ${t.title}`}>
                         {pmt.full_name || pmt.anwesha_id || pmt.paymentId}
                       </span>
                     </div>
@@ -655,6 +674,16 @@ export default function IntegratedAdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* PAYMENT DETAILS MODAL */}
+      <PaymentDetailsModal
+        paymentId={selectedPaymentId}
+        isOpen={isPaymentModalOpen}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setSelectedPaymentId(null);
+        }}
+      />
     </div>
   );
 }

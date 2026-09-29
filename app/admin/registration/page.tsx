@@ -26,6 +26,8 @@ import ErrorState from '@/components/events/ErrorState';
 import { CardSkeleton } from '@/components/events/EventLoadingSkeleton';
 
 import Link from 'next/link';
+import ExportDropdown from '@/components/common/ExportDropdown';
+import { exportAllRegistrations } from '@/lib/exportUtils';
 
 export default function RegistrationDashboardPage() {
   const { isDarkMode } = useAuth();
@@ -163,16 +165,19 @@ export default function RegistrationDashboardPage() {
           </p>
         </div>
 
-        <Link
-          href="/admin/registration/events"
-          className={`inline-flex items-center gap-2 px-4 h-11 rounded-xl text-sm font-bold transition-colors ${
-            isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[#2563EB] hover:bg-blue-700 text-white'
-          }`}
-        >
-          <FiGrid size={16} />
-          View Registrations
-          <FiArrowRight size={16} />
-        </Link>
+        <div className="flex items-center gap-3">
+          <ExportDropdown label="Export All Registrations" onExport={exportAllRegistrations} />
+          <Link
+            href="/admin/registration/events"
+            className={`inline-flex items-center gap-2 px-4 h-10 rounded-xl text-xs font-bold transition-colors ${
+              isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[#2563EB] hover:bg-blue-700 text-white'
+            }`}
+          >
+            <FiGrid size={15} />
+            View Registrations
+            <FiArrowRight size={15} />
+          </Link>
+        </div>
       </div>
 
       {statsLoading ? (

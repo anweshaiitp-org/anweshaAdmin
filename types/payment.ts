@@ -35,6 +35,58 @@ export interface PaymentAnalyticsResponse {
   by_domain: Record<PaymentPurpose, { count: number; paid_count: number; amount_paid: number }>;
 }
 
+export interface PaymentDetail extends PaymentRecord {
+  user_id?: string;
+  atom_txn_id?: string | null;
+  bank_txn_id?: string | null;
+  updated_at?: string;
+  email_id?: string;
+  phone_number?: string;
+  payer?: {
+    user_id?: string;
+    anwesha_id?: string;
+    full_name?: string;
+    email_id?: string;
+    phone_number?: string;
+    college_name?: string;
+    user_type?: string;
+    role?: string;
+    is_email_verified?: boolean;
+    id_card_status?: string;
+  } | null;
+  event?: {
+    id: string;
+    name: string;
+    category?: string;
+    is_special?: boolean;
+    special_event_type?: string | null;
+    registration_fee?: number;
+    venue?: string;
+    start_time?: string;
+    end_time?: string;
+  } | null;
+  team?: {
+    team_id: string;
+    team_name: string;
+    leader_anwesha_id: string;
+    event_id: string;
+    current_team_size: number;
+    members: Array<{
+      user_id: string;
+      anwesha_id: string;
+      team_role: string;
+      payment_status: string;
+    }>;
+  } | null;
+  raw?: any;
+}
+
+export interface PaymentDetailResponse {
+  success: boolean;
+  payment: PaymentDetail;
+  message?: string;
+}
+
 export interface PaymentListResponse {
   success: boolean;
   total: number;

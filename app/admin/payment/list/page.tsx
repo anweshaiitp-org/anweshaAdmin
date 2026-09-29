@@ -4,9 +4,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { fetchPaymentList } from '@/lib/paymentService';
 import type { PaymentRecord, PaymentPurpose } from '@/types/payment';
-import { FiArrowLeft, FiRefreshCw, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiArrowLeft, FiRefreshCw, FiSearch, FiFilter, FiEye } from 'react-icons/fi';
 import ErrorState from '@/components/events/ErrorState';
 import Link from 'next/link';
+import PaymentDetailsModal from '@/components/payment/PaymentDetailsModal';
+import ExportDropdown from '@/components/common/ExportDropdown';
+import { exportAllPayments } from '@/lib/exportUtils';
 
 const DOMAINS: Array<'ALL' | PaymentPurpose> = [
   'ALL',
@@ -28,6 +31,10 @@ export default function PaymentListPage() {
   const [domainFilter, setDomainFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
+
+  // Payment Details Modal
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const loadPayments = useCallback(async (cursor?: string | null) => {
     if (!cursor) setLoading(true);
@@ -100,15 +107,18 @@ export default function PaymentListPage() {
             All Transactions
           </h1>
         </div>
-        <button
-          onClick={() => loadPayments()}
-          disabled={loading}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-            isDarkMode ? 'bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700' : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm'
-          }`}
-        >
-          <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Refresh Data
-        </button>
+        <div className="flex items-center gap-2">
+          <ExportDropdown label="Export All Payments" onExport={exportAllPayments} />
+          <button
+            onClick={() => loadPayments()}
+            disabled={loading}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              isDarkMode ? 'bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700' : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm'
+            }`}
+          >
+            <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* FILTERS BAR */}
@@ -172,6 +182,7 @@ export default function PaymentListPage() {
                 <th className="px-6 py-4 font-bold">Amount</th>
                 <th className="px-6 py-4 font-bold">Date</th>
                 <th className="px-6 py-4 font-bold text-center">Status</th>
+                <th className="px-6 py-4 font-bold text-right">Action</th>
               </tr>
             </thead>
             <tbody className={`divide-y ${isDarkMode ? 'divide-gray-700/50' : 'divide-gray-50'}`}>
@@ -188,12 +199,13 @@ export default function PaymentListPage() {
                     <td className="px-6 py-4"><div className={`h-4 w-14 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} /></td>
                     <td className="px-6 py-4"><div className={`h-4 w-28 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} /></td>
                     <td className="px-6 py-4 text-center"><div className={`h-5 w-16 mx-auto rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} /></td>
+                    <td className="px-6 py-4"><div className={`h-4 w-12 ml-auto rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} /></td>
                   </tr>
                 ))
               ) : error && payments.length === 0 ? (
                 /* INLINE ERROR STATE INSIDE TABLE */
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="max-w-md mx-auto space-y-3">
                       <p className={`text-sm font-semibold ${isDarkMode ? 'text-rose-400' : 'text-rose-600'}`}>{error}</p>
                       <button
@@ -208,16 +220,23 @@ export default function PaymentListPage() {
               ) : payments.length === 0 ? (
                 /* EMPTY STATE */
                 <tr>
-                  <td colSpan={6} className={`px-6 py-12 text-center text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <td colSpan={7} className={`px-6 py-12 text-center text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     No transactions found.
                   </td>
                 </tr>
               ) : (
                 /* POPULATED RECORDS */
                 payments.map((payment) => (
-                  <tr key={payment.paymentId} className={`transition-colors ${isDarkMode ? 'hover:bg-gray-700/30' : 'hover:bg-blue-50/30'}`}>
+                  <tr 
+                    key={payment.paymentId} 
+                    onClick={() => {
+                      setSelectedPaymentId(payment.paymentId);
+                      setIsModalOpen(true);
+                    }}
+                    className={`transition-colors cursor-pointer group ${isDarkMode ? 'hover:bg-gray-700/40' : 'hover:bg-blue-50/50'}`}
+                  >
                     <td className="px-6 py-4 font-mono text-xs">
-                      <span className="font-bold text-indigo-500">{payment.paymentId}</span>
+                      <span className="font-bold text-indigo-500 group-hover:underline">{payment.paymentId}</span>
                       {payment.merch_txn_id && payment.merch_txn_id !== payment.paymentId && (
                         <span className="block text-[10px] text-gray-400">Txn: {payment.merch_txn_id}</span>
                       )}
@@ -238,6 +257,20 @@ export default function PaymentListPage() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <StatusBadge status={payment.payment_status} />
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPaymentId(payment.paymentId);
+                          setIsModalOpen(true);
+                        }}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
+                          isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-blue-400' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+                        }`}
+                      >
+                        <FiEye size={13} /> View
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -261,6 +294,16 @@ export default function PaymentListPage() {
           </div>
         )}
       </div>
+
+      {/* PAYMENT DETAILS MODAL */}
+      <PaymentDetailsModal
+        paymentId={selectedPaymentId}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedPaymentId(null);
+        }}
+      />
     </div>
   );
 }
