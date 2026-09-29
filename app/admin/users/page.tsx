@@ -7,13 +7,11 @@ import { User, InviteUserPayload } from '@/types/users';
 import { fetchUsers, inviteUser, sendBroadcastEmail } from '@/lib/userService';
 import UserTable from '@/components/users/UserTable';
 import UserFormModal from '@/components/users/UserFormModal';
-import ExportModal, { ExportFormat } from '@/components/users/ExportModal';
 import BroadcastModal from '@/components/users/BroadcastModal';
-import { FiSearch, FiRefreshCw, FiUserPlus, FiDownload, FiSend } from 'react-icons/fi';
+import { FiSearch, FiRefreshCw, FiUserPlus, FiSend } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import ExportDropdown from '@/components/common/ExportDropdown';
+import { exportAllUsers } from '@/lib/exportUtils';
 
 export default function UsersDashboard() {
   const { isDarkMode } = useAuth();
@@ -36,7 +34,6 @@ export default function UsersDashboard() {
   
   // Modals State
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
 
   const loadUsers = async (currentLastKey?: string) => {
@@ -136,63 +133,6 @@ export default function UsersDashboard() {
     }
   };
 
-  // Export
-  const getExportData = (selectedColumns: string[]) => {
-    const dataToExport = selectedIds.length > 0 
-      ? users.filter(u => selectedIds.includes(u.id)) 
-      : users;
-    
-    return dataToExport.map(u => {
-      const row: any = {};
-      if (selectedColumns.includes('Anwesha ID')) row['Anwesha ID'] = u.anwesha_id || 'N/A';
-      if (selectedColumns.includes('Name')) row['Name'] = u.full_name;
-      if (selectedColumns.includes('Email')) row['Email'] = u.email_id;
-      if (selectedColumns.includes('Phone')) row['Phone'] = u.phone_number || 'N/A';
-      if (selectedColumns.includes('College')) row['College'] = u.college_name || 'N/A';
-      if (selectedColumns.includes('Type')) row['Type'] = u.user_type;
-      if (selectedColumns.includes('Role')) row['Role'] = u.role;
-      if (selectedColumns.includes('Email Verified')) row['Email Verified'] = u.is_email_verified ? 'Yes' : 'No';
-      if (selectedColumns.includes('ID Card Status')) row['ID Card Status'] = u.id_card_status || 'NOT_REQUESTED';
-      
-      const regTime = (u as any).time_of_registration || (u as any).created_at;
-      if (selectedColumns.includes('Registration Time')) {
-        row['Registration Time'] = regTime ? new Date(regTime).toLocaleString() : 'N/A';
-      }
-      return row;
-    });
-  };
-
-  const handleExport = (format: ExportFormat, selectedColumns: string[]) => {
-    const data = getExportData(selectedColumns);
-    if (data.length === 0) {
-      toast.error("No data to export");
-      return;
-    }
-
-    if (format === 'excel') {
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Users");
-      XLSX.writeFile(wb, "Users_Export.xlsx");
-    } else if (format === 'pdf') {
-      const doc = new jsPDF();
-      const columns = Object.keys(data[0]);
-      const rows = data.map(obj => Object.values(obj) as string[]);
-      
-      doc.text("Users Export", 14, 15);
-      autoTable(doc, {
-        head: [columns],
-        body: rows,
-        startY: 20,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [37, 99, 235] }
-      });
-      doc.save("Users_Export.pdf");
-    }
-    
-    setIsExportModalOpen(false);
-  };
-
   return (
     <div className="w-full space-y-6 pb-10">
       {/* Header */}
@@ -211,13 +151,7 @@ export default function UsersDashboard() {
             <FiRefreshCw size={18} className={loading ? 'animate-spin text-blue-500' : ''} />
           </button>
           
-          <button 
-            onClick={() => setIsExportModalOpen(true)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm ${
-              isDarkMode ? 'bg-[#1e293b] text-gray-300 hover:bg-slate-700 border border-slate-700' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-            }`}>
-            <FiDownload size={16} /> Export
-          </button>
+          <ExportDropdown label="Export All Users" onExport={exportAllUsers} />
 
           <button
             onClick={() => setIsInviteModalOpen(true)}
@@ -362,12 +296,6 @@ export default function UsersDashboard() {
         mode="invite"
         onClose={() => setIsInviteModalOpen(false)}
         onSubmit={handleInvite}
-      />
-
-      <ExportModal 
-        isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
-        onExport={handleExport}
       />
 
       <BroadcastModal

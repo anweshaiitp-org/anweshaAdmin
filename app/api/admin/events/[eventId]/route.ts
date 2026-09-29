@@ -9,27 +9,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ even
   const session = await auth();
   const token = (session as any)?.accessToken;
 
-  // We hit the events endpoint. If it doesn't filter by eventId properly, we will find it manually.
-  const res = await fetch(`${BACKEND_URL}/events`, {
+  // Direct fetch for this specific event (supports both regular and special events)
+  const res = await fetch(`${BACKEND_URL}/events/${encodeURIComponent(decodedId)}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store'
   });
 
   const data = await res.json();
-
-  if (data.events && Array.isArray(data.events)) {
-    const matchedEvent = data.events.find((e: any) => e.id === decodedId);
-    if (matchedEvent) {
-      return NextResponse.json({ success: true, event: matchedEvent }, { status: 200 });
-    } else {
-      return NextResponse.json({ success: false, message: 'Event not found' }, { status: 404 });
-    }
-  }
-
-  if (data.event) {
-    return NextResponse.json(data, { status: res.status });
-  }
-
   return NextResponse.json(data, { status: res.status });
 }
 

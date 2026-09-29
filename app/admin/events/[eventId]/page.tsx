@@ -12,7 +12,7 @@ import DeleteConfirmModal from '@/components/events/DeleteConfirmModal';
 import toast from 'react-hot-toast';
 import { 
   FiEdit2, FiArrowLeft, FiCalendar, FiMapPin, FiUsers, 
-  FiDollarSign, FiGlobe, FiExternalLink, FiVideo, FiClock, FiTrash2, FiInfo ,FiImage
+  FiDollarSign, FiGlobe, FiExternalLink, FiVideo, FiClock, FiTrash2, FiInfo, FiImage, FiAward, FiStar
 } from 'react-icons/fi';
 
 export default function ViewEventPage() {
@@ -164,6 +164,12 @@ export default function ViewEventPage() {
           
           {/* Status & Tags Row */}
           <div className={`p-5 rounded-2xl border flex flex-wrap items-center gap-3 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+            {event.is_special && (
+              <span className="px-3 py-1.5 text-xs font-bold rounded-lg uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
+                <FiStar className="text-amber-500 fill-amber-500" size={13} />
+                Special Event: {event.special_event_type || 'FEST'}
+              </span>
+            )}
             <span className={`px-3 py-1.5 text-xs font-bold rounded-lg uppercase tracking-wider ${
               event.is_active
                 ? isDarkMode ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-800/50' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
@@ -278,6 +284,18 @@ export default function ViewEventPage() {
             <div className={`h-px w-full my-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`} />
             <SidebarItem icon={FiDollarSign} label="Registration Fee" value={event.registration_fee === 0 ? 'Free' : `₹${event.registration_fee}`} />
             <SidebarItem icon={FiDollarSign} label="Prize Pool" value={event.prize || '—'} />
+            {event.ca_points !== undefined && (
+              <>
+                <div className={`h-px w-full my-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`} />
+                <SidebarItem icon={FiAward} label="CA Referral Points" value={`${event.ca_points} Points`} />
+              </>
+            )}
+            {event.is_special && (
+              <>
+                <div className={`h-px w-full my-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`} />
+                <SidebarItem icon={FiStar} label="Special Event Category" value={event.special_event_type || 'FEST'} />
+              </>
+            )}
           </div>
 
           {/* Meta Footer */}

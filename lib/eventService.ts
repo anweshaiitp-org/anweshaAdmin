@@ -18,6 +18,8 @@ const BASE = '/api/admin/events';
 // ---------------------------------------------------------------------------
 // List Events
 // ---------------------------------------------------------------------------
+// List Events (Regular)
+// ---------------------------------------------------------------------------
 export async function fetchEvents(params?: {
   tag?: string;
   status?: string;
@@ -31,6 +33,23 @@ export async function fetchEvents(params?: {
   const url = sp.toString() ? `${BASE}?${sp.toString()}` : BASE;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch events');
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// List Special Events (Fest Pass, Garba, Pronites, etc.)
+// ---------------------------------------------------------------------------
+export async function fetchSpecialEvents(params?: {
+  type?: string;
+  active_only?: boolean;
+}): Promise<EventsListResponse> {
+  const sp = new URLSearchParams();
+  if (params?.type && params.type !== 'ALL') sp.set('type', params.type);
+  if (params?.active_only !== undefined) sp.set('active_only', String(params.active_only));
+
+  const url = sp.toString() ? `${BASE}/special?${sp.toString()}` : `${BASE}/special`;
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch special events');
   return res.json();
 }
 

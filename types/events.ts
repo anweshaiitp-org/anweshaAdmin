@@ -12,6 +12,15 @@ export enum EventTag {
   GUEST_TALK = 'GUEST_TALK',
 }
 
+export enum SpecialEventType {
+  FEST = 'FEST',
+  FEST_PASS = 'FEST_PASS',
+  GARBA = 'GARBA',
+  PRONITE = 'PRONITE',
+  FLAGSHIP = 'FLAGSHIP',
+  OTHER = 'OTHER'
+}
+
 export interface Event {
   id: string;                    // PK: EVT#<uuid>
   name: string;                  // Name of the event
@@ -32,6 +41,9 @@ export interface Event {
   is_online: boolean;            // Online vs Offline mode
   registration_link?: string;    // External registration link (if any)
   order: number;                 // Custom sorting priority
+  is_special?: boolean;          // Flag indicating special event / fest pass
+  special_event_type?: SpecialEventType; // FEST, FEST_PASS, GARBA, PRONITE, etc.
+  ca_points?: number;            // Custom CA points awarded on registration
   created_at: number;            // Epoch timestamp
   updated_at: number;            // Epoch timestamp
 }
@@ -58,6 +70,11 @@ export interface EventDetailResponse {
 
 export interface EventAnalytics {
   total_events: number;
+  regular_events?: number;
+  special_events?: {
+    total: number;
+    by_type: Record<string, number>;
+  };
   status: {
     active: number;
     inactive_hidden: number;
