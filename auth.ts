@@ -3,11 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { CredentialsSignin } from "next-auth";
 import type { LoginResponse } from "@/types/api";
 
-const NEXTAUTH_URL = process.env.NEXTAUTH_URL;
-
-if (!NEXTAUTH_URL) {
-  throw new Error("NEXTAUTH_URL is not defined");
-}
+const NEXTAUTH_URL = process.env.NEXTAUTH_URL || "";
 
 
 class LoginError extends CredentialsSignin {

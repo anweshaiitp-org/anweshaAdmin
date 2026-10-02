@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
-  const API_BASE_URL = 'https://xt3pspoxkt.execute-api.localhost.localstack.cloud:4566/prod';
+  const API_BASE_URL = process.env.BACKEND_URL;
 
   try {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';

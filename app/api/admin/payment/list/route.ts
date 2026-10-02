@@ -7,7 +7,7 @@ const BACKEND_URL = process.env.BACKEND_URL;
 export async function GET(request: NextRequest) {
     try {
         const session = await auth();
-        const token = (session as any)?.accessToken || "mock-jwt-token-dev-bypass-2027";
+        const token = (session as any)?.accessToken || request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
         if (!token) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
