@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
-const getBackendUrl = () => (process.env.BACKEND_URL || 'http://localhost:4000').trim().replace(/\/+$/, '');
+const getBackendUrl = () => (process.env.BACKEND_URL || '').trim().replace(/\/+$/, '');
 
 export async function POST(request: NextRequest) {
   try {

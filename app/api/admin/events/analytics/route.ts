@@ -6,7 +6,11 @@ const BACKEND_URL = process.env.BACKEND_URL;
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    const token = (session as any)?.accessToken || "mock-jwt-token-dev-bypass-2027";
+    const token = (session as any)?.accessToken || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+
+    if (!token) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
 
     // Try hitting the backend analytics route first
     const res = await fetch(`${BACKEND_URL}/admin/events/analytics`, {
@@ -19,7 +23,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(data, { status: res.status });
     }
 
-    // Fallback: If backend analytics fails (e.g. 401/404 due to bypass), compute it manually
+    // Fallback: If backend analytics endpoint is unavailable, compute it manually from events list
     const eventsRes = await fetch(`${BACKEND_URL}/events`, {
       cache: 'no-store'
     });
