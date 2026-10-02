@@ -6,6 +6,7 @@ const ALLOWED_ROLES = [
   "ADMIN",
   "SUPER_ADMIN",
   "VOLUNTEER",
+  "ACCOMMODATION_ADMIN",
 ];
 
 export default auth(async(req) => {
