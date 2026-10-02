@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { User, InviteUserPayload } from '@/types/users';
 import { fetchUsers, inviteUser, sendBroadcastEmail } from '@/lib/userService';
@@ -154,10 +154,16 @@ export default function UsersDashboard() {
           <ExportDropdown label="Export All Users" onExport={exportAllUsers} />
 
           <button
-            onClick={() => setIsInviteModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+            onClick={() => router.push('/admin/users/invite')}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
           >
             <FiUserPlus size={16} /> Invite User
+          </button>
+          <button
+            onClick={() => redirect('/admin/users/dashboard')}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+          >
+             Dashboard
           </button>
         </div>
       </div>
