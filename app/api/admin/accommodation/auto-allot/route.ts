@@ -6,7 +6,7 @@ const getBackendUrl = () => (process.env.BACKEND_URL || 'http://localhost:4000')
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    const token = (session as any)?.accessToken || request.headers.get('authorization')?.replace('Bearer ', '') || 'mock-jwt-token-dev-bypass-2027';
+    const token = (session as any)?.accessToken || request.headers.get('authorization')?.replace('Bearer ', '');
 
     const url = `${getBackendUrl()}/admin/accommodation/auto-allot`;
 
