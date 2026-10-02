@@ -30,8 +30,9 @@ export interface UserListResponse {
 
 export interface InviteUserPayload {
   email_id: string;
-  full_name: string;
   assign_role: string;
+  full_name?: string;
+  role?: string;
   phone_number?: string;
   college_name?: string;
   gender?: string;

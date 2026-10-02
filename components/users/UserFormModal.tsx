@@ -122,128 +122,160 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, 
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-          {mode === 'invite' && (
-            <div>
-              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Email</label>
-              <input
-                type="email"
-                name="email_id"
-                required
-                value={formData.email_id}
-                onChange={handleChange}
-                className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
-                  isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-                }`}
-                placeholder="user@example.com"
-              />
-            </div>
+          {mode === 'invite' ? (
+            <>
+              <div>
+                <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="email_id"
+                  required
+                  value={formData.email_id}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
+                    isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                  }`}
+                  placeholder="staff@example.com"
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Staff Role <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="assign_role"
+                  value={formData.assign_role}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
+                    isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                  }`}
+                >
+                  <option value="ADMIN">ADMIN (Full Access)</option>
+                  <option value="ACCOMMODATION_ADMIN">ACCOMMODATION_ADMIN</option>
+                  <option value="MODERATOR">MODERATOR</option>
+                  <option value="VOLUNTEER">VOLUNTEER</option>
+                  <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                </select>
+              </div>
+
+              <div className={`p-3 rounded-xl text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-300 border border-blue-800' : 'bg-blue-50 text-blue-800 border border-blue-100'}`}>
+                An onboarding invite with an account activation link will be sent to the recipient's email.
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Full Name</label>
+                <input
+                  type="text"
+                  name="full_name"
+                  required
+                  value={formData.full_name}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
+                    isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                  }`}
+                  placeholder="John Doe"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Role</label>
+                  <select
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    disabled={authUser?.role !== 'SUPER_ADMIN'}
+                    className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
+                      isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                    }`}
+                  >
+                    <option value="USER">USER</option>
+                    <option value="VOLUNTEER">VOLUNTEER</option>
+                    <option value="MODERATOR">MODERATOR</option>
+                    <option value="ACCOMMODATION_ADMIN">ACCOMMODATION_ADMIN</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>User Type</label>
+                  <select
+                    name="user_type"
+                    value={formData.user_type}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
+                      isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                    }`}
+                  >
+                    <option value="STUDENT">STUDENT</option>
+                    <option value="PROFESSIONAL">PROFESSIONAL</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Phone Number</label>
+                  <input
+                    type="text"
+                    name="phone_number"
+                    value={formData.phone_number}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
+                      isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>College Name</label>
+                  <input
+                    type="text"
+                    name="college_name"
+                    value={formData.college_name}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
+                      isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Gender</label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
+                      isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                    }`}
+                  >
+                    <option value="MALE">MALE</option>
+                    <option value="FEMALE">FEMALE</option>
+                    <option value="OTHER">OTHER</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>DOB</label>
+                  <input
+                    type="date"
+                    name="dob"
+                    value={formData.dob}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
+                      isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                    }`}
+                  />
+                </div>
+              </div>
+            </>
           )}
-
-          <div>
-            <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Full Name</label>
-            <input
-              type="text"
-              name="full_name"
-              required
-              value={formData.full_name}
-              onChange={handleChange}
-              className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
-                isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-              }`}
-              placeholder="John Doe"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Role</label>
-              <select
-                name={mode === 'invite' ? 'assign_role' : 'role'}
-                value={mode === 'invite' ? formData.assign_role : formData.role}
-                onChange={handleChange}
-                disabled={authUser?.role !== 'SUPER_ADMIN' && mode === 'edit'} // only SUPER_ADMIN can change roles in edit mode typically, but backend handles validation
-                className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
-                  isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-                }`}
-              >
-                <option value="USER">USER</option>
-                <option value="MODERATOR">MODERATOR</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-              </select>
-            </div>
-            <div>
-              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>User Type</label>
-              <select
-                name="user_type"
-                value={formData.user_type}
-                onChange={handleChange}
-                className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
-                  isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-                }`}
-              >
-                <option value="STUDENT">STUDENT</option>
-                <option value="PROFESSIONAL">PROFESSIONAL</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Phone Number</label>
-              <input
-                type="text"
-                name="phone_number"
-                value={formData.phone_number}
-                onChange={handleChange}
-                className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
-                  isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-                }`}
-              />
-            </div>
-            <div>
-              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>College Name</label>
-              <input
-                type="text"
-                name="college_name"
-                value={formData.college_name}
-                onChange={handleChange}
-                className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
-                  isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-                }`}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Gender</label>
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
-                  isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-                }`}
-              >
-                <option value="MALE">MALE</option>
-                <option value="FEMALE">FEMALE</option>
-                <option value="OTHER">OTHER</option>
-              </select>
-            </div>
-            <div>
-              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>DOB</label>
-              <input
-                type="date"
-                name="dob"
-                value={formData.dob}
-                onChange={handleChange}
-                className={`w-full px-4 py-2.5 rounded-xl border focus:ring-2 outline-none transition-all ${
-                  isDarkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
-                }`}
-              />
-            </div>
-          </div>
 
           {mode === 'edit' && (
             <div className="flex gap-6 mt-4">

@@ -11,13 +11,33 @@ import type {
 
 const BASE = '/api/admin/accommodation';
 
-export async function fetchAccommodationQueue(status?: string, limit = 100): Promise<{ queue: AccommodationRequest[]; count: number }> {
+const getAuthHeaders = (isFormData = false) => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+  return headers;
+};
+
+export async function fetchAccommodationQueue(
+  status?: string,
+  limit = 20,
+  lastKey?: string | null
+): Promise<{ queue: AccommodationRequest[]; count: number; lastKey?: string | null }> {
   const sp = new URLSearchParams();
   if (status) sp.set('status', status);
   if (limit) sp.set('limit', limit.toString());
+  if (lastKey) sp.set('lastKey', lastKey);
 
   const url = `${BASE}/queue?${sp.toString()}`;
-  const res = await fetch(url, { cache: 'no-store' });
+  const res = await fetch(url, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.message || 'Failed to fetch accommodation queue');
@@ -26,7 +46,10 @@ export async function fetchAccommodationQueue(status?: string, limit = 100): Pro
 }
 
 export async function fetchAccommodationStats(): Promise<{ stats: AccommodationStats }> {
-  const res = await fetch(`${BASE}/stats`, { cache: 'no-store' });
+  const res = await fetch(`${BASE}/stats`, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.message || 'Failed to fetch accommodation stats');
@@ -35,7 +58,10 @@ export async function fetchAccommodationStats(): Promise<{ stats: AccommodationS
 }
 
 export async function fetchRooms(): Promise<{ rooms: Room[]; count: number }> {
-  const res = await fetch(`${BASE}/rooms`, { cache: 'no-store' });
+  const res = await fetch(`${BASE}/rooms`, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.message || 'Failed to fetch rooms');
@@ -46,7 +72,7 @@ export async function fetchRooms(): Promise<{ rooms: Room[]; count: number }> {
 export async function createRoom(payload: CreateRoomPayload): Promise<{ room: Room }> {
   const res = await fetch(`${BASE}/rooms`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload)
   });
   const data = await res.json().catch(() => ({}));
@@ -59,7 +85,7 @@ export async function createRoom(payload: CreateRoomPayload): Promise<{ room: Ro
 export async function updateRoom(payload: UpdateRoomPayload): Promise<{ message: string }> {
   const res = await fetch(`${BASE}/rooms`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload)
   });
   const data = await res.json().catch(() => ({}));
@@ -72,7 +98,7 @@ export async function updateRoom(payload: UpdateRoomPayload): Promise<{ message:
 export async function allotRoom(payload: AllotRoomPayload): Promise<{ message: string; payment_deadline: string; amount: number }> {
   const res = await fetch(`${BASE}/allot`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload)
   });
   const data = await res.json().catch(() => ({}));
@@ -85,7 +111,7 @@ export async function allotRoom(payload: AllotRoomPayload): Promise<{ message: s
 export async function rejectAccommodationRequest(payload: RejectRequestPayload): Promise<{ message: string }> {
   const res = await fetch(`${BASE}/reject`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload)
   });
   const data = await res.json().catch(() => ({}));
@@ -96,7 +122,10 @@ export async function rejectAccommodationRequest(payload: RejectRequestPayload):
 }
 
 export async function fetchAccommodationConfig(): Promise<{ config: AccommodationConfig }> {
-  const res = await fetch(`${BASE}/config`, { cache: 'no-store' });
+  const res = await fetch(`${BASE}/config`, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.message || 'Failed to fetch accommodation config');
@@ -107,12 +136,39 @@ export async function fetchAccommodationConfig(): Promise<{ config: Accommodatio
 export async function updateAccommodationConfig(config: Partial<AccommodationConfig>): Promise<{ config: AccommodationConfig; message: string }> {
   const res = await fetch(`${BASE}/config`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(config)
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.message || 'Failed to update accommodation config');
+  }
+  return data;
+}
+
+export async function autoAllotAccommodationRooms(): Promise<{
+  success: boolean;
+  count: number;
+  unallotted_count: number;
+  message: string;
+  allotted: Array<{
+    request_id: string;
+    lead_user_id: string;
+    room_id: string;
+    room_number: string;
+    gender: string;
+    members_count: number;
+    amount: number;
+    payment_deadline: string;
+  }>;
+}> {
+  const res = await fetch(`${BASE}/auto-allot`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to auto-allot rooms');
   }
   return data;
 }
