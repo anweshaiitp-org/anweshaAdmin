@@ -55,8 +55,15 @@ export default function EventTable({ events }: EventTableProps) {
               >
                 {/* Name (ID Removed) */}
                 <td className="px-5 py-4">
-                  <div className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {event.name}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {event.name}
+                    </div>
+                    {event.is_special && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-extrabold rounded-full uppercase tracking-wider bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
+                        ✨ {event.special_event_type || 'SPECIAL'}
+                      </span>
+                    )}
                   </div>
                 </td>
 

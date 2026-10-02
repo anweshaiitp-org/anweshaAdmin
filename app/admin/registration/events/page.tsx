@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { fetchEvents } from '@/lib/eventService';
+import { fetchEvents, fetchSpecialEvents } from '@/lib/eventService';
 import {
   fetchAllRegistrations,
   fetchEventRegistrationsPaginated,
@@ -16,13 +16,15 @@ import type {
 import type { Event } from '@/types/events';
 import {
   FiUsers, FiCheckCircle, FiXCircle, FiClock,
-  FiGrid, FiList, FiArrowLeft,
+  FiGrid, FiList, FiArrowLeft, FiStar,
 } from 'react-icons/fi';
 import Pagination from '@/components/events/Pagination';
 import ErrorState from '@/components/events/ErrorState';
 import EmptyState from '@/components/events/EmptyState';
 import { TableSkeleton, CardSkeleton } from '@/components/events/EventLoadingSkeleton';
 import Link from 'next/link';
+import ExportDropdown from '@/components/common/ExportDropdown';
+import { exportAllRegistrations, exportEventRegistrations } from '@/lib/exportUtils';
 
 const PAGE_SIZE = 20;
 type ViewMode = 'all' | 'eventwise';
@@ -104,13 +106,16 @@ function RegistrationEventsPage() {
       setEventsLoading(true);
       setEventsError('');
       try {
-        const res = await fetchEvents();
-        if (res.success) {
-          const raw = res.events || [];
-          const uniq = new Map();
-          raw.forEach((ev: Event) => { if (!uniq.has(ev.name)) uniq.set(ev.name, ev); });
-          setEvents(Array.from(uniq.values()));
-        }
+        const [resRegular, resSpecial] = await Promise.all([
+          fetchEvents().catch(() => ({ success: true, events: [] })),
+          fetchSpecialEvents().catch(() => ({ success: true, events: [] })),
+        ]);
+        const regularEvents = resRegular.success ? resRegular.events || [] : [];
+        const specialEvents = resSpecial.success ? resSpecial.events || [] : [];
+        const raw = [...specialEvents, ...regularEvents];
+        const uniq = new Map();
+        raw.forEach((ev: Event) => { if (!uniq.has(ev.id)) uniq.set(ev.id, ev); });
+        setEvents(Array.from(uniq.values()));
       } catch (err: any) {
         setEventsError(err.message || 'Failed to load events');
       } finally {
@@ -207,7 +212,18 @@ function RegistrationEventsPage() {
             Registrations
           </h1>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {view === 'all' && (
+            <ExportDropdown label="Export All Registrations" onExport={exportAllRegistrations} />
+          )}
+          {view === 'eventwise' && eventId && eventData && (
+            <ExportDropdown
+              label={`Export ${eventData.event_name || 'Event'} Regs`}
+              onExport={(format, onProgress) =>
+                exportEventRegistrations(eventId, eventData.event_name || eventId, format, onProgress)
+              }
+            />
+          )}
           <TabButton mode="all" icon={FiList} label="All Registrations" />
           <TabButton mode="eventwise" icon={FiGrid} label="Event-wise" />
         </div>
@@ -244,10 +260,17 @@ function RegistrationEventsPage() {
                     {listData.data.map((item, idx) => (
                       <tr key={item.registration_id || item.team_id || idx} className={`transition-colors ${isDarkMode ? 'hover:bg-gray-700/30' : 'hover:bg-blue-50/30'}`}>
                         <td className="px-6 py-4">
-                          {/* TODO: fix href */}
-                          <a href={`/admin/events/${item.event_id}`} className={`font-semibold hover:underline ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {item.event_name}
-                          </a>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/admin/events/${encodeURIComponent(item.event_id)}`} className={`font-semibold hover:underline ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {item.event_name}
+                            </Link>
+                            {item.is_special && (
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center gap-1">
+                                <FiStar size={10} className="fill-amber-500" />
+                                {item.special_event_type || 'SPECIAL'}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className={`px-6 py-4 text-xs font-bold uppercase ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {item.registration_type}
@@ -312,11 +335,22 @@ function RegistrationEventsPage() {
                 }`}
             >
               <option value="">-- Choose an event --</option>
-              {events.map(ev => (
-                <option key={ev.id} value={ev.id}>
-                  {ev.name} {ev.is_active ? '' : '(Inactive)'} - {ev.min_team_size === 1 && ev.max_team_size === 1 ? 'Solo' : 'Team'}
-                </option>
-              ))}
+              {events.filter(e => e.is_special).length > 0 && (
+                <optgroup label="✨ Special Events (Fest Pass, Garba, Pronites)">
+                  {events.filter(e => e.is_special).map(ev => (
+                    <option key={ev.id} value={ev.id}>
+                      ✨ {ev.name} ({ev.special_event_type || 'FEST'}) {ev.is_active ? '' : '(Inactive)'} - {ev.min_team_size === 1 && ev.max_team_size === 1 ? 'Solo' : 'Team'}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="Regular Events">
+                {events.filter(e => !e.is_special).map(ev => (
+                  <option key={ev.id} value={ev.id}>
+                    {ev.name} {ev.is_active ? '' : '(Inactive)'} - {ev.min_team_size === 1 && ev.max_team_size === 1 ? 'Solo' : 'Team'}
+                  </option>
+                ))}
+              </optgroup>
             </select>
             {eventsError && <p className="text-red-500 text-xs mt-2">{eventsError}</p>}
           </div>

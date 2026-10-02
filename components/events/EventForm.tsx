@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { EventTag } from '@/types/events';
+import { EventTag, SpecialEventType } from '@/types/events';
 import type { Event } from '@/types/events';
 import { createEvent, updateEvent, parseOrganizers } from '@/lib/eventService';
 import PosterUpload from './PosterUpload';
 import toast from 'react-hot-toast';
-import { FiLoader } from 'react-icons/fi';
+import { FiLoader, FiStar } from 'react-icons/fi';
 import TiptapEditor from '../TiptapEditor';
 
 interface EventFormProps {
@@ -38,6 +38,9 @@ export default function EventForm({ initialData }: EventFormProps) {
     is_online: initialData?.is_online ?? false,
     registration_link: initialData?.registration_link || '',
     order: initialData?.order ?? 0,
+    is_special: initialData?.is_special ?? false,
+    special_event_type: initialData?.special_event_type || SpecialEventType.OTHER,
+    ca_points: initialData?.ca_points ?? 20,
   });
 
   const [posterFile, setPosterFile] = useState<File | null>(null);
@@ -292,6 +295,80 @@ export default function EventForm({ initialData }: EventFormProps) {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* ---- Special Event Configuration ---- */}
+      <div className={`p-5 rounded-2xl border mb-8 ${
+        formData.is_special
+          ? isDarkMode 
+            ? 'bg-purple-950/20 border-purple-800/60 shadow-lg shadow-purple-950/10' 
+            : 'bg-purple-50/70 border-purple-200 shadow-sm'
+          : isDarkMode 
+            ? 'bg-gray-800/40 border-gray-700/60' 
+            : 'bg-gray-50/60 border-gray-200'
+      }`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className={`p-2 rounded-xl ${formData.is_special ? 'bg-purple-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
+              <FiStar className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Special Event / Fest Pass Flag
+              </h3>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Classify this item as an All-Access Pass, Garba Night, Pronite, or Flagship Event.
+              </p>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.is_special}
+              onChange={(e) => update('is_special', e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-purple-400 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+              {formData.is_special ? 'Special Event Enabled' : 'Regular Event'}
+            </span>
+          </label>
+        </div>
+
+        {formData.is_special && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-purple-200 dark:border-purple-800/40">
+            <div>
+              <label className={labelCls}>Special Event Type *</label>
+              <select
+                value={formData.special_event_type}
+                onChange={(e) => update('special_event_type', e.target.value as SpecialEventType)}
+                className={inputCls}
+              >
+                <option value={SpecialEventType.FEST_PASS}>FEST PASS (All-Access Pass)</option>
+                <option value={SpecialEventType.GARBA}>GARBA (Garba & Dandiya Night)</option>
+                <option value={SpecialEventType.PRONITE}>PRONITE (Celebrity / Artist Night)</option>
+                <option value={SpecialEventType.FLAGSHIP}>FLAGSHIP (Major Keynote / Showcase)</option>
+                <option value={SpecialEventType.FEST}>FEST (General Fest Admission)</option>
+                <option value={SpecialEventType.OTHER}>OTHER (Special Workshop / VIP Entry)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className={labelCls}>CA Referral Points Awarded</label>
+              <input
+                type="number"
+                min={0}
+                value={formData.ca_points}
+                onChange={(e) => update('ca_points', parseInt(e.target.value) || 0)}
+                placeholder="20"
+                className={inputCls}
+              />
+              <p className={`text-[11px] mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Points credited to the Campus Ambassador when a user registers with their referral code.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ---- Toggles ---- */}

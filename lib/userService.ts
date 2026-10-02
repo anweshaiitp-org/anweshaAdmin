@@ -451,3 +451,14 @@ export async function fetchUserTicketDetails(userId: string) {
     if (!res.ok) throw new Error(data.message || 'Failed to fetch ticket details');
     return data;
 }
+
+// 3. Batch Broadcast Tickets to all registered attendees
+export async function batchBroadcastTickets(): Promise<{ success: boolean; message: string }> {
+  const res = await fetch('/api/admin/tickets/broadcast', {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to broadcast tickets');
+  return data;
+}

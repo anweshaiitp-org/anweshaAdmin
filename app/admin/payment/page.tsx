@@ -11,6 +11,8 @@ import {
 import ErrorState from '@/components/events/ErrorState';
 import { CardSkeleton } from '@/components/events/EventLoadingSkeleton';
 import Link from 'next/link';
+import ExportDropdown from '@/components/common/ExportDropdown';
+import { exportAllPayments } from '@/lib/exportUtils';
 
 export default function PaymentDashboardPage() {
   const { isDarkMode } = useAuth();
@@ -65,16 +67,19 @@ export default function PaymentDashboardPage() {
           </p>
         </div>
 
-        <Link
-          href="/admin/payment/list"
-          className={`inline-flex items-center gap-2 px-4 h-11 rounded-xl text-sm font-bold transition-colors ${
-            isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[#2563EB] hover:bg-blue-700 text-white'
-          }`}
-        >
-          <FiList size={16} />
-          View All Transactions
-          <FiArrowRight size={16} />
-        </Link>
+        <div className="flex items-center gap-3">
+          <ExportDropdown label="Export All Payments" onExport={exportAllPayments} />
+          <Link
+            href="/admin/payment/list"
+            className={`inline-flex items-center gap-2 px-4 h-10 rounded-xl text-xs font-bold transition-colors ${
+              isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[#2563EB] hover:bg-blue-700 text-white'
+            }`}
+          >
+            <FiList size={15} />
+            View All Transactions
+            <FiArrowRight size={15} />
+          </Link>
+        </div>
       </div>
 
       {loading ? (
