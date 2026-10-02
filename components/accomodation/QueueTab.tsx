@@ -13,11 +13,14 @@ interface Props {
   onAllot: (r: AccommodationRequest) => void;
   onReject: (r: AccommodationRequest) => void;
   onViewGroup: (r: AccommodationRequest) => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 const QueueRow = React.memo(function QueueRow({
   req, onAllot, onReject, onViewGroup
-}: { req: AccommodationRequest } & Omit<Props, 'requests' | 'isDarkMode'>) {
+}: { req: AccommodationRequest } & Omit<Props, 'requests' | 'isDarkMode' | 'hasMore' | 'loadingMore' | 'onLoadMore'>) {
   return (
     <tr className="hover:bg-teal-50/20 dark:hover:bg-teal-950/20 transition-colors">
       <td className="p-4 font-black text-teal-600 dark:text-teal-400">{req.id}</td>
@@ -65,7 +68,16 @@ const QueueRow = React.memo(function QueueRow({
   );
 });
 
-function QueueTab({ requests, isDarkMode: d, onAllot, onReject, onViewGroup }: Props) {
+function QueueTab({
+  requests,
+  isDarkMode: d,
+  onAllot,
+  onReject,
+  onViewGroup,
+  hasMore,
+  loadingMore,
+  onLoadMore
+}: Props) {
   // search/filter state is local, so typing never re-renders the whole page
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('ALL');
@@ -142,6 +154,34 @@ function QueueTab({ requests, isDarkMode: d, onAllot, onReject, onViewGroup }: P
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination & Load More Controls */}
+        <div className={`p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs ${d ? 'bg-gray-900/30 border-gray-700 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
+          <div className="font-semibold">
+            Showing <span className="font-bold text-teal-600 dark:text-teal-400">{filtered.length}</span> of <span className="font-bold">{requests.length}</span> loaded requests
+          </div>
+
+          {hasMore && onLoadMore && (
+            <button
+              onClick={onLoadMore}
+              disabled={loadingMore}
+              className="px-5 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white transition-all shadow-sm flex items-center gap-2"
+            >
+              {loadingMore ? (
+                <>
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                  <span>Loading 20 More...</span>
+                </>
+              ) : (
+                <span>Load 20 More Requests</span>
+              )}
+            </button>
+          )}
+
+          {!hasMore && requests.length > 0 && (
+            <span className="text-gray-400 italic">All accommodation requests loaded</span>
+          )}
         </div>
       </div>
     </div>

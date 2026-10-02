@@ -8,9 +8,12 @@ import { exportToCSV, exportToPDF } from './utils/exportAllotted';
 interface Props {
   requests: AccommodationRequest[]; // already filtered to ALLOTTED_PENDING_PAYMENT | CONFIRMED
   isDarkMode: boolean;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
-function AllottedTab({ requests, isDarkMode: d }: Props) {
+function AllottedTab({ requests, isDarkMode: d, hasMore, loadingMore, onLoadMore }: Props) {
   return (
     <div className="space-y-4">
       <div className={`p-5 rounded-3xl border flex flex-col md:flex-row gap-4 items-start md:items-center justify-between ${cardCls(d)}`}>
@@ -71,6 +74,30 @@ function AllottedTab({ requests, isDarkMode: d }: Props) {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Footer & Load More */}
+        <div className={`p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs ${d ? 'bg-gray-900/30 border-gray-700 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
+          <div className="font-semibold">
+            Showing <span className="font-bold text-teal-600 dark:text-teal-400">{requests.length}</span> allotted / confirmed records
+          </div>
+
+          {hasMore && onLoadMore && (
+            <button
+              onClick={onLoadMore}
+              disabled={loadingMore}
+              className="px-5 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white transition-all shadow-sm flex items-center gap-2"
+            >
+              {loadingMore ? (
+                <>
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                  <span>Loading 20 More...</span>
+                </>
+              ) : (
+                <span>Load 20 More Records</span>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

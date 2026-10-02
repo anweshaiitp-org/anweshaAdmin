@@ -21,6 +21,7 @@ import PersonalInfoSection from '@/components/userdetail/Personalinfosection';
 import DocumentsSection from '@/components/userdetail/Documentssection';
 import RegistrationsSection from '@/components/userdetail/Registrationssection';
 import PaymentsSection from '@/components/userdetail/Paymentssection';
+import UserAccommodationSection from '@/components/userdetail/UserAccommodationSection';
 import DangerZoneSection from '@/components/userdetail/Dangerzonesection';
 import UpdateConfirmModal from '@/components/userdetail/Updateconfirmmodal';
 import RejectIdModal from '@/components/userdetail/Rejectidmodal';
@@ -377,8 +378,17 @@ export default function UserDetailPage() {
  
             {/* Row 4: Payments */}
             <PaymentsSection isDark={isDarkMode} transactions={transactions} />
- 
-            {/* Row 5: Danger Zone (delete user, with its own confirm modal) */}
+
+            {/* Row 5: Accommodation Allotment & Status */}
+            <UserAccommodationSection
+                isDark={isDarkMode}
+                userId={profile.user_id}
+                anweshaId={profile.anwesha_id}
+                gender={profile.gender}
+                userName={profile.full_name}
+            />
+
+            {/* Row 6: Danger Zone (delete user, with its own confirm modal) */}
             {canManageRoles && (
                 <DangerZoneSection
                     isDark={isDarkMode}

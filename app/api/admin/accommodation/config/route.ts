@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
-const BACKEND_URL = process.env.BACKEND_URL;
+const getBackendUrl = () => (process.env.BACKEND_URL || 'http://localhost:4000').trim().replace(/\/+$/, '');
 
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
-    const token = (session as any)?.accessToken || 'mock-jwt-token-dev-bypass-2027';
+    const token = (session as any)?.accessToken || request.headers.get('authorization')?.replace('Bearer ', '') || 'mock-jwt-token-dev-bypass-2027';
 
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const url = `${BACKEND_URL}/admin/accommodation/config`;
+    const url = `${getBackendUrl()}/admin/accommodation/config`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -20,9 +16,10 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
+      cache: 'no-store'
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       return NextResponse.json(
@@ -34,21 +31,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
     console.error('Accommodation Config GET Error:', error);
-    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
     const session = await auth();
-    const token = (session as any)?.accessToken || 'mock-jwt-token-dev-bypass-2027';
-
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
+    const token = (session as any)?.accessToken || request.headers.get('authorization')?.replace('Bearer ', '') || 'mock-jwt-token-dev-bypass-2027';
 
     const body = await request.json();
-    const url = `${BACKEND_URL}/admin/accommodation/config`;
+    const url = `${getBackendUrl()}/admin/accommodation/config`;
 
     const response = await fetch(url, {
       method: 'PUT',
@@ -59,7 +52,7 @@ export async function PUT(request: NextRequest) {
       body: JSON.stringify(body)
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       return NextResponse.json(
@@ -71,6 +64,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
     console.error('Accommodation Config PUT Error:', error);
-    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

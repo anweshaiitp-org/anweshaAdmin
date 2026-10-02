@@ -27,12 +27,24 @@ const RejectRequestModal = dynamic(() => import('@/components/accomodation/modal
 const RoomFormModal = dynamic(() => import('@/components/accomodation/modals/RoomFormModal'));
 const ConfigModal = dynamic(() => import('@/components/accomodation/modals/ConfigModal'));
 const GroupDetailsModal = dynamic(() => import('@/components/accomodation/modals/GroupDetailsModal'));
+const AutoAllotModal = dynamic(() => import('@/components/accomodation/modals/AutoAllotModal'));
 
 export default function AccommodationAdminPage() {
   const { user, isDarkMode, isLoading: authLoading } = useAuth();
   const hasAccess = !!user && ALLOWED_ROLES.includes(user.role || '');
 
-  const { stats, requests, rooms, config, loading, refreshing, reload } = useAccommodationData(hasAccess);
+  const {
+    stats,
+    requests,
+    rooms,
+    config,
+    loading,
+    refreshing,
+    reload,
+    hasMoreQueue,
+    loadingMore,
+    loadMoreQueue
+  } = useAccommodationData(hasAccess);
 
   const [activeTab, setActiveTab] = useState<TabId>('overview');
 
@@ -42,6 +54,7 @@ export default function AccommodationAdminPage() {
   const [groupTarget, setGroupTarget] = useState<AccommodationRequest | null>(null);
   const [roomModal, setRoomModal] = useState<{ open: boolean; room: Room | null }>({ open: false, room: null });
   const [configOpen, setConfigOpen] = useState(false);
+  const [autoAllotOpen, setAutoAllotOpen] = useState(false);
 
   // derived data (hooks must run before any early return)
   const allotted = useMemo(
@@ -56,13 +69,19 @@ export default function AccommodationAdminPage() {
   const openSettings = useCallback(() => setConfigOpen(true), []);
   const openCreateRoom = useCallback(() => setRoomModal({ open: true, room: null }), []);
   const openEditRoom = useCallback((room: Room) => setRoomModal({ open: true, room }), []);
+  const openAutoAllot = useCallback(() => setAutoAllotOpen(true), []);
 
   if (authLoading) return <Spinner />;
   if (!hasAccess) return <Unauthorized />;
 
   return (
     <div className="w-full space-y-6 pb-12">
-      <AccommodationHeader refreshing={refreshing} onRefresh={refresh} onOpenSettings={openSettings} />
+      <AccommodationHeader
+        refreshing={refreshing}
+        onRefresh={refresh}
+        onOpenSettings={openSettings}
+        onOpenAutoAllot={openAutoAllot}
+      />
 
       <AccommodationTabs
         active={activeTab}
@@ -85,9 +104,20 @@ export default function AccommodationAdminPage() {
               onAllot={setAllotTarget}
               onReject={setRejectTarget}
               onViewGroup={setGroupTarget}
+              hasMore={hasMoreQueue}
+              loadingMore={loadingMore}
+              onLoadMore={loadMoreQueue}
             />
           )}
-          {activeTab === 'allotted' && <AllottedTab requests={allotted} isDarkMode={isDarkMode} />}
+          {activeTab === 'allotted' && (
+            <AllottedTab
+              requests={allotted}
+              isDarkMode={isDarkMode}
+              hasMore={hasMoreQueue}
+              loadingMore={loadingMore}
+              onLoadMore={loadMoreQueue}
+            />
+          )}
           {activeTab === 'rooms' && (
             <RoomsTab rooms={rooms} isDarkMode={isDarkMode} onCreate={openCreateRoom} onEdit={openEditRoom} />
           )}
@@ -108,6 +138,9 @@ export default function AccommodationAdminPage() {
       )}
       {configOpen && (
         <ConfigModal config={config} isDarkMode={isDarkMode} onClose={() => setConfigOpen(false)} onDone={refetch} />
+      )}
+      {autoAllotOpen && (
+        <AutoAllotModal isDarkMode={isDarkMode} onClose={() => setAutoAllotOpen(false)} onDone={refetch} />
       )}
       {groupTarget && (
         <GroupDetailsModal request={groupTarget} isDarkMode={isDarkMode} onClose={() => setGroupTarget(null)} />

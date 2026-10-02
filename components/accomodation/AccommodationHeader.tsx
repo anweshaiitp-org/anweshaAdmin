@@ -5,9 +5,10 @@ interface Props {
   refreshing: boolean;
   onRefresh: () => void;
   onOpenSettings: () => void;
+  onOpenAutoAllot?: () => void;
 }
 
-function AccommodationHeader({ refreshing, onRefresh, onOpenSettings }: Props) {
+function AccommodationHeader({ refreshing, onRefresh, onOpenSettings, onOpenAutoAllot }: Props) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-teal-600 to-cyan-700 p-6 rounded-3xl text-white shadow-xl">
       <div className="flex items-center gap-3">
@@ -23,6 +24,14 @@ function AccommodationHeader({ refreshing, onRefresh, onOpenSettings }: Props) {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
+        {onOpenAutoAllot && (
+          <button
+            onClick={onOpenAutoAllot}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-amber-400 hover:bg-amber-300 text-teal-950 transition-all shadow-md"
+          >
+            <span>⚡ Auto Allot Rooms</span>
+          </button>
+        )}
         <button
           onClick={onRefresh}
           disabled={refreshing}
