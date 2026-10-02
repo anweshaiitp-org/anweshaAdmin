@@ -412,7 +412,7 @@ export async function sendBroadcastEmail(
   return res.json();
 }
 
-export async function fetchUserDashboard(): Promise<unknown> {
+export async function fetchUserDashboard(): Promise<any> {
   const res = await fetch(`${ADMIN_BASE}/dashboard`, {
     cache: 'no-store',
     headers: getAuthHeaders()

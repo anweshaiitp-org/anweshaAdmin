@@ -154,7 +154,7 @@ export default function AdminProfilePage() {
                 setProfile(res.data);
                 setFormData(res.data);
             } else {
-                throw new Error(res.message || 'Failed to load profile data');
+                throw new Error((res as any).message || 'Failed to load profile data');
             }
             
             // Try fetching photo separately so it doesn't break profile text load
