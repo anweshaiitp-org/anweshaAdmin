@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Anwesha",
+  title: "Anwesha-Admin",
   description: "Admin Portal",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({
