@@ -70,11 +70,19 @@ export default function ViewEventPage() {
 
   useEffect(() => { load(); }, [eventId]);
 
-  const formatDate = (iso?: string) => {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleString('en-IN', {
-      day: 'numeric', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
+  const formatDate = (val?: string | number) => {
+    if (!val) return '—';
+    const num = Number(val);
+    const d = !isNaN(num) && typeof val !== 'boolean' && String(val).trim() !== ''
+      ? new Date(num > 1e11 ? num : num * 1000)
+      : new Date(val);
+    if (isNaN(d.getTime())) return String(val);
+    return d.toLocaleString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -278,6 +286,9 @@ export default function ViewEventPage() {
           <div className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
             <SidebarItem icon={FiCalendar} label="Start Date" value={formatDate(event.start_time)} />
             <SidebarItem icon={FiClock} label="End Date" value={formatDate(event.end_time)} />
+            {event.registration_deadline && (
+              <SidebarItem icon={FiClock} label="Registration Deadline" value={formatDate(event.registration_deadline)} />
+            )}
             <div className={`h-px w-full my-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`} />
             <SidebarItem icon={FiMapPin} label="Venue" value={event.is_online ? 'Online Platform' : (event.venue || 'TBA')} />
             <SidebarItem icon={FiUsers} label="Team Size" value={`${event.min_team_size} – ${event.max_team_size} members`} />
@@ -300,8 +311,9 @@ export default function ViewEventPage() {
 
           {/* Meta Footer */}
           <div className={`text-center text-[10px] font-mono uppercase tracking-widest ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
-            <p>Created: {new Date(event.created_at).toLocaleDateString()}</p>
-            <p className="mt-1">Order: {event.order}</p>
+            <p>Created: {formatDate(event.created_at)}</p>
+            {event.updated_at && <p className="mt-0.5">Updated: {formatDate(event.updated_at)}</p>}
+            <p className="mt-1">Order: {event.order ?? 0}</p>
           </div>
 
         </div>
