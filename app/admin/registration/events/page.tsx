@@ -154,9 +154,9 @@ function RegistrationEventsPage() {
   const PaymentBadge = ({ status }: { status: PaymentStatus | string }) => {
     const s = (status || '').toUpperCase();
     const config: Record<string, { icon: any; classes: string; label: string }> = {
-      SUCCESS: {
+      PAID: {
         icon: FiCheckCircle,
-        label: 'Success',
+        label: 'Paid',
         classes: isDarkMode
           ? 'bg-emerald-900/30 text-emerald-400 border-emerald-800/50'
           : 'bg-emerald-50 text-emerald-700 border-emerald-200',
