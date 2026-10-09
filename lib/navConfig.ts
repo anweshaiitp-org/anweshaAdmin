@@ -9,7 +9,6 @@ import {
   FiClipboard,
   FiMaximize,
   FiZap,
-  FiActivity
   FiActivity,
   FiUserPlus
 } from "react-icons/fi";
