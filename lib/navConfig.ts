@@ -8,12 +8,14 @@ import {
   FiRadio,
   FiClipboard,
   FiMaximize,
-  FiActivity
+  FiActivity,
+  FiUserPlus
 } from "react-icons/fi";
 
 export const sidebarItems = [
   { name: "Dashboard", icon: FiShield, path: "/admin" }, 
   { name: "User", icon: FiUser, path: "/admin/users" },
+  { name: "Manual Entry", icon: FiUserPlus, path: "/admin/manual-entry" },
   { name: "Events", icon: FiCalendar, path: "/admin/events" },
   { name: "Registration", icon: FiClipboard, path: "/admin/registration" },
   { name: "Accommodation", icon: FiHome, path: "/admin/accommodation" },

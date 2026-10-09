@@ -233,6 +233,45 @@ export async function fetchUsers(params?: {
 }
 
 // --------------------------------
+// Dedicated Backend Admin User Search (/users/search)
+// --------------------------------
+export async function searchAdminUsers(params: {
+  q?: string;
+  search?: string;
+  email?: string;
+  name?: string;
+  mobile?: string;
+  doc?: string;
+  limit?: number;
+  lastKey?: string;
+}): Promise<UserListResponse> {
+  const sp = new URLSearchParams();
+
+  const query = params.q || params.search;
+  if (query) sp.set('q', query);
+  if (params.email) sp.set('email', params.email);
+  if (params.name) sp.set('name', params.name);
+  if (params.mobile) sp.set('mobile_number', params.mobile);
+  if (params.doc) sp.set('document_number', params.doc);
+  if (params.limit) sp.set('limit', String(params.limit));
+  if (params.lastKey) sp.set('lastKey', params.lastKey);
+
+  const url = `/api/admin/users/search?${sp.toString()}`;
+
+  const res = await fetch(url, {
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to search users');
+  }
+
+  return res.json();
+}
+
+// --------------------------------
 
 export async function inviteUser(
   data: InviteUserPayload
@@ -460,5 +499,42 @@ export async function batchBroadcastTickets(): Promise<{ success: boolean; messa
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Failed to broadcast tickets');
+  return data;
+}
+
+// 4. Submit Manual / Bulk Entry
+export async function submitManualEntry(payload: {
+  records?: any[];
+  users?: any[];
+  event_id?: string;
+  amount_paid?: number;
+  accommodation?: boolean;
+} | any[]): Promise<{
+  success: boolean;
+  message?: string;
+  results?: {
+    totalProcessed: number;
+    successful: number;
+    failedCount: number;
+    createdUsers: Array<{
+      user_id: string;
+      anwesha_id: string;
+      email_id: string;
+      full_name: string;
+      event_id?: string;
+      registration_id?: string;
+    }>;
+    failedRows: Array<{ record: any; reason: string }>;
+  };
+}> {
+  const res = await fetch('/api/admin/manual-entry', {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok && res.status !== 207) {
+    throw new Error(data.message || 'Failed to submit manual entry records');
+  }
   return data;
 }
