@@ -223,7 +223,7 @@ export default function IntegratedAdminDashboard() {
   const quickActions = [
     { label: 'Broadcast tickets', sub: 'All attendees', icon: FiSend, tone: 'blue', onClick: openBroadcast },
     { label: 'Create special pass', sub: 'Fest / Garba', icon: FiStar, tone: 'indigo', href: '/admin/events/create' },
-    { label: 'Gate QR scanner', sub: 'Entry validation', icon: FiCpu, tone: 'sky', href: '/admin/gate/scan' },
+    { label: 'Gate QR scanner', sub: 'Entry validation', icon: FiCpu, tone: 'sky', href: '/admin/scanner' },
     { label: 'CloudWatch logs', sub: 'Live log stream', icon: FiTerminal, tone: 'blue', href: '/admin/logs' },
     { label: 'Broadcast email', sub: 'Mass marketing', icon: FiMail, tone: 'indigo', href: '/admin/broadcast' },
     { label: 'Payment ledger', sub: 'By domain', icon: FiCreditCard, tone: 'sky', href: '/admin/payment/list' },

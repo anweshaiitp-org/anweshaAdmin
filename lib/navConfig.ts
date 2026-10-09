@@ -8,6 +8,7 @@ import {
   FiRadio,
   FiClipboard,
   FiMaximize,
+  FiZap,
   FiActivity
 } from "react-icons/fi";
 
