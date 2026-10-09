@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { CredentialsSignin } from "next-auth";
 import type { LoginResponse } from "@/types/api";
 
-const NEXTAUTH_URL = process.env.NEXTAUTH_URL || "";
+const NEXTAUTH_URL = process.env.NEXTAUTH_URL;
 
 
 class LoginError extends CredentialsSignin {

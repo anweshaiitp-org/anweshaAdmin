@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { redirect, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { User, InviteUserPayload } from '@/types/users';
-import { fetchUsers, inviteUser, sendBroadcastEmail } from '@/lib/userService';
+import { fetchUsers, searchAdminUsers, inviteUser, sendBroadcastEmail } from '@/lib/userService';
 import UserTable from '@/components/users/UserTable';
 import UserFormModal from '@/components/users/UserFormModal';
 import BroadcastModal from '@/components/users/BroadcastModal';
-import { FiSearch, FiRefreshCw, FiUserPlus, FiSend } from 'react-icons/fi';
+import { FiSearch, FiRefreshCw, FiUserPlus, FiSend, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import ExportDropdown from '@/components/common/ExportDropdown';
 import { exportAllUsers } from '@/lib/exportUtils';
@@ -39,13 +39,26 @@ export default function UsersDashboard() {
   const loadUsers = async (currentLastKey?: string) => {
     setLoading(true);
     try {
-      const res = await fetchUsers({
-        limit,
-        lastKey: currentLastKey,
-        search: searchQuery.trim() || undefined,
-        role: roleFilter || undefined,
-        college: collegeFilter.trim() || undefined,
-      });
+      const trimmedQuery = searchQuery.trim();
+      let res;
+
+      if (trimmedQuery) {
+        // Backend Search endpoint (/users/search)
+        res = await searchAdminUsers({
+          q: trimmedQuery,
+          limit,
+          lastKey: currentLastKey,
+        });
+      } else {
+        // Standard paginated listing (/admin/users)
+        res = await fetchUsers({
+          limit,
+          lastKey: currentLastKey,
+          role: roleFilter || undefined,
+          college: collegeFilter.trim() || undefined,
+        });
+      }
+
       if (res.success) {
         setUsers(res.users || []);
         setNextLastKey(res.pagination?.nextLastKey);
@@ -171,18 +184,42 @@ export default function UsersDashboard() {
       {/* Toolbar / Filters */}
       <div className={`p-4 rounded-2xl shadow-sm border flex flex-col xl:flex-row gap-4 justify-between items-center ${isDarkMode ? 'bg-[#1e293b] border-slate-700/50' : 'bg-white border-slate-200'}`}>
         <div className="flex flex-1 gap-3 w-full xl:w-auto">
-          <div className="relative flex-1 max-w-md">
-            <FiSearch className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
-            <input 
-              type="text" 
-              placeholder="Search name, email, or Anwesha ID..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-11 pr-4 py-2.5 rounded-xl border focus:ring-2 outline-none text-sm font-medium transition-all ${
-                isDarkMode ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white'
-              }`}
-            />
-          </div>
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              loadUsers(undefined);
+            }}
+            className="relative flex-1 max-w-md flex items-center gap-2"
+          >
+            <div className="relative flex-1">
+              <FiSearch className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+              <input 
+                type="text" 
+                placeholder="Search name, email, mobile, doc, or Anwesha ID..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full pl-11 pr-9 py-2.5 rounded-xl border focus:ring-2 outline-none text-sm font-medium transition-all ${
+                  isDarkMode ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white'
+                }`}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  title="Clear search"
+                >
+                  <FiX size={15} />
+                </button>
+              )}
+            </div>
+            <button
+              type="submit"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-sm transition-all active:scale-95 shrink-0"
+            >
+              Search
+            </button>
+          </form>
         </div>
 
         <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-end flex-wrap">

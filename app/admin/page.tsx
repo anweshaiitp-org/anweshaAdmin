@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import {
   FiUsers, FiDollarSign, FiSend, FiStar, FiCheckCircle, FiAlertTriangle, FiRefreshCw,
   FiShield, FiServer, FiMail, FiCpu, FiTerminal, FiArrowRight, FiClock, FiLayers,
-  FiPlus, FiCreditCard, FiAward, FiX, FiDownload,
+  FiPlus, FiCreditCard, FiAward, FiX, FiDownload, FiUserPlus,
 } from 'react-icons/fi';
 import PaymentDetailsModal from '@/components/payment/PaymentDetailsModal';
 import ExportDropdown from '@/components/common/ExportDropdown';
@@ -221,12 +221,13 @@ export default function IntegratedAdminDashboard() {
 
   /* ---- Quick actions ---- */
   const quickActions = [
-    { label: 'Broadcast tickets', sub: 'All attendees', icon: FiSend, tone: 'blue', onClick: openBroadcast },
-    { label: 'Create special pass', sub: 'Fest / Garba', icon: FiStar, tone: 'indigo', href: '/admin/events/create' },
-    { label: 'Gate QR scanner', sub: 'Entry validation', icon: FiCpu, tone: 'sky', href: '/admin/gate/scan' },
-    { label: 'CloudWatch logs', sub: 'Live log stream', icon: FiTerminal, tone: 'blue', href: '/admin/logs' },
-    { label: 'Broadcast email', sub: 'Mass marketing', icon: FiMail, tone: 'indigo', href: '/admin/broadcast' },
-    { label: 'Payment ledger', sub: 'By domain', icon: FiCreditCard, tone: 'sky', href: '/admin/payment/list' },
+    { label: 'Manual registration', sub: 'Spot & bulk import', icon: FiUserPlus, tone: 'blue', href: '/admin/manual-entry' },
+    { label: 'Broadcast tickets', sub: 'All attendees', icon: FiSend, tone: 'indigo', onClick: openBroadcast },
+    { label: 'Create special pass', sub: 'Fest / Garba', icon: FiStar, tone: 'sky', href: '/admin/events/create' },
+    { label: 'Gate QR scanner', sub: 'Entry validation', icon: FiCpu, tone: 'blue', href: '/admin/gate/scan' },
+    { label: 'CloudWatch logs', sub: 'Live log stream', icon: FiTerminal, tone: 'indigo', href: '/admin/logs' },
+    { label: 'Broadcast email', sub: 'Mass marketing', icon: FiMail, tone: 'sky', href: '/admin/broadcast' },
+    { label: 'Payment ledger', sub: 'By domain', icon: FiCreditCard, tone: 'emerald', href: '/admin/payment/list' },
   ] as const;
 
   const actionCls = `group min-w-0 p-4 rounded-2xl border text-left transition-colors flex flex-col gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
@@ -272,6 +273,12 @@ export default function IntegratedAdminDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Link
+              href="/admin/manual-entry"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 border border-white/25 backdrop-blur transition-colors active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <FiUserPlus size={14} /> Manual entry
+            </Link>
             <button
               onClick={() => loadDashboardData(true)}
               disabled={refreshing}

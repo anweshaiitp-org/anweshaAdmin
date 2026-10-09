@@ -159,8 +159,23 @@ export async function getEventPosterUrl(eventId: string): Promise<PosterViewResp
 export const parseOrganizers = (organizerInput?: any): [string, string][] => {
   if (!organizerInput) return [];
 
+  // Direct array support (e.g. backend returning [["Rahul", "9876543210"], ["Priya", "Lead"]])
+  if (Array.isArray(organizerInput)) {
+    return organizerInput
+      .map((item: any) => {
+        if (Array.isArray(item)) {
+          return [String(item[0] || '').trim(), String(item[1] || '').trim()] as [string, string];
+        }
+        if (typeof item === 'string') {
+          const parts = item.split(':');
+          return [parts[0]?.trim() || '', parts.slice(1).join(':').trim()] as [string, string];
+        }
+        return ['', ''] as [string, string];
+      })
+      .filter(([name, role]) => name.length > 0 || role.length > 0);
+  }
+
   // 1. Defensively force the input into a string. 
-  // If the backend returned a parsed Array/Object instead of a string, stringify it.
   let cleanedString = typeof organizerInput === 'string' 
     ? organizerInput 
     : JSON.stringify(organizerInput);
