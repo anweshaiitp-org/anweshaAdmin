@@ -69,7 +69,7 @@ export function AuthProvider({
 
     if (result?.error) {
       let message = "Something went wrong.";
-      switch (result.code) {
+      switch (result.error) {
         case "ACCOUNT_LOCKED":
           message = "Administrator account is locked.";
           break;
