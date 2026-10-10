@@ -111,15 +111,20 @@ export const InputRow = ({ icon: Icon, label, isDark, type, onSuggest, suggestTe
     );
 };
 
-export const StatusBadge = ({ status }: { status: string }) => {
+export const StatusBadge = ({ status }: { status?: string }) => {
+    const s = (status || 'PENDING').toUpperCase();
     let colorClass = "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300";
-    if (status === 'PAID' || status === 'VERIFIED') colorClass = "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400";
-    if (status === 'PENDING' || status === 'REQUESTED') colorClass = "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400";
-    if (status === 'FAILED' || status === 'REJECTED') colorClass = "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400";
+    if (['PAID', 'VERIFIED', 'CONFIRMED', 'SUCCESS', 'COMPLETED', 'APPROVED'].includes(s)) {
+        colorClass = "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400";
+    } else if (['PENDING', 'REQUESTED', 'ALLOTTED_PENDING_PAYMENT'].includes(s)) {
+        colorClass = "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400";
+    } else if (['FAILED', 'REJECTED', 'CANCELLED', 'CANCELLED_DUE_TO_NON_PAYMENT'].includes(s)) {
+        colorClass = "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400";
+    }
 
     return (
         <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-transparent ${colorClass}`}>
-            {status}
+            {status || 'PENDING'}
         </span>
     );
 };
