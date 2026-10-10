@@ -39,9 +39,15 @@ export default function DocumentsSection({
     onRequestUpload,
 }: DocumentsSectionProps) {
     const [showRequestAgainModal, setShowRequestAgainModal] = useState(false);
+    const [showForceRequestModal, setShowForceRequestModal] = useState(false);
 
     const handleRequestAgain = () => {
         setShowRequestAgainModal(false);
+        onRequestUpload();
+    };
+
+    const handleForceRequest = () => {
+        setShowForceRequestModal(false);
         onRequestUpload();
     };
 
@@ -181,6 +187,27 @@ export default function DocumentsSection({
                                     </button>
                                 )}
 
+                                {/* Not required -> Force Request ID button with confirmation */}
+                                {profile.id_card_status === 'NOT_REQUIRED' && (
+                                    <div className="space-y-3">
+                                        <div className={`p-4 rounded-xl text-center text-sm font-medium ${
+                                            isDark
+                                                ? 'bg-slate-800/60 text-slate-300'
+                                                : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                            ID Card verification is currently not required for this user.
+                                        </div>
+
+                                        <button
+                                            disabled={processingIdAction}
+                                            onClick={() => setShowForceRequestModal(true)}
+                                            className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                        >
+                                            <FiSend size={18} /> Force Request ID
+                                        </button>
+                                    </div>
+                                )}
+
                                 {/* Already requested OR Rejected -> Show Request Again Modal flow */}
                                 {['REQUESTED', 'REJECTED'].includes(profile.id_card_status) && (
                                     <div className="space-y-3">
@@ -278,6 +305,71 @@ export default function DocumentsSection({
                             >
                                 <FiSend size={16} />
                                 Send Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Force Request Confirmation Modal */}
+            {showForceRequestModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setShowForceRequestModal(false)}
+                    />
+
+                    {/* Modal */}
+                    <div className={`relative w-full max-w-md rounded-2xl shadow-2xl p-6 ${
+                        isDark
+                            ? 'bg-slate-900 border border-slate-700'
+                            : 'bg-white border border-slate-200'
+                    }`}>
+                        <div className="flex items-start gap-4">
+                            <div className={`p-3 rounded-xl ${
+                                isDark
+                                    ? 'bg-amber-500/10 text-amber-400'
+                                    : 'bg-amber-50 text-amber-600'
+                            }`}>
+                                <FiSend size={22} />
+                            </div>
+
+                            <div>
+                                <h3 className={`text-lg font-bold ${
+                                    isDark ? 'text-white' : 'text-slate-900'
+                                }`}>
+                                    Force Request ID Card?
+                                </h3>
+
+                                <p className={`mt-2 text-sm leading-relaxed ${
+                                    isDark ? 'text-slate-400' : 'text-slate-600'
+                                }`}>
+                                    This will generate a secure identity card upload token and email the user to submit their document. Their status will change to <span className="font-semibold text-amber-500">REQUESTED</span>.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => setShowForceRequestModal(false)}
+                                disabled={processingIdAction}
+                                className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                                    isDark
+                                        ? 'bg-slate-800 hover:bg-slate-700 text-white'
+                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                                }`}
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleForceRequest}
+                                disabled={processingIdAction}
+                                className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                <FiSend size={16} />
+                                Force Request
                             </button>
                         </div>
                     </div>
