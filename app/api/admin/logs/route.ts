@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
-    if (token) {
+    if (token && token !== 'null' && token !== 'undefined') {
       headers['Authorization'] = `Bearer ${token}`;
     }
 

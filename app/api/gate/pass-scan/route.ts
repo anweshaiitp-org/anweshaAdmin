@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 // Strip trailing slash to prevent double-slash URLs (BACKEND_URL ends with /prod/)
-const BASE = (process.env.BACKEND_URL ?? "").replace(/\/+$/, "");
+const BASE = (process.env.BACKEND_URL ?? "").trim().replace(/\/+$/, "");
 
 export async function POST(req: NextRequest) {
   try {

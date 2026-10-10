@@ -22,13 +22,9 @@ export async function fetchCloudWatchLogs(params: LogFilterParams = {}): Promise
   if (params.limit) sp.set('limit', String(params.limit));
   if (params.nextToken) sp.set('nextToken', params.nextToken);
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   const url = `/api/admin/logs?${sp.toString()}`;
   const res = await fetch(url, { headers, cache: 'no-store' });

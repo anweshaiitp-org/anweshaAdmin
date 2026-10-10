@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-const BASE = (process.env.BACKEND_URL ?? "").replace(/\/+$/, "");
+const BASE = (process.env.BACKEND_URL ?? "").trim().replace(/\/+$/, "");
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const response = await fetch(`${BASE}/admin/dashboard-stats`, {
+    const response = await fetch(`${BASE}/admin/users/dashboard`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     const data = await response.json();
     return NextResponse.json({
       success: true,
-      gateStats: data.gateStats
+      gateStats: data.data?.gateStats || data.gateStats || {}
     });
   } catch (error) {
     console.error("Gate Stats Fetch Error:", error);

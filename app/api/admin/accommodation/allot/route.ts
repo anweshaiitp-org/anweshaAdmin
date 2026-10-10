@@ -6,7 +6,10 @@ const getBackendUrl = () => (process.env.BACKEND_URL || '').trim().replace(/\/+$
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    const token = (session as any)?.accessToken || request.headers.get('authorization')?.replace('Bearer ', '');
+    const token = (session as any)?.accessToken || request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+    if (!token || token === 'null' || token === 'undefined') {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
 
     const body = await request.json();
     const url = `${getBackendUrl()}/admin/accommodation/allot`;
