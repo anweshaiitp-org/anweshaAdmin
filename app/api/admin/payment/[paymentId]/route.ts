@@ -19,7 +19,7 @@ export async function GET(
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
-    if (token) {
+    if (token && token !== 'null' && token !== 'undefined') {
       headers['Authorization'] = `Bearer ${token}`;
     }
 

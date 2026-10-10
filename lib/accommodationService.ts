@@ -12,11 +12,7 @@ import type {
 const BASE = '/api/admin/accommodation';
 
 const getAuthHeaders = (isFormData = false) => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const headers: Record<string, string> = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
   if (!isFormData) {
     headers['Content-Type'] = 'application/json';
   }

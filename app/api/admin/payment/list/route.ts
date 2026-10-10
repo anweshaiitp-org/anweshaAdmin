@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
         const session = await auth();
         const token = (session as any)?.accessToken || request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
-        if (!token) {
+        if (!token || token === 'null' || token === 'undefined') {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 

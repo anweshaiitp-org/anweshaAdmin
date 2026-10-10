@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-const BACKEND_URL = process.env.BACKEND_URL!;
+const BACKEND_URL = (process.env.BACKEND_URL ?? "").trim().replace(/\/+$/, "");
 
 export async function POST(req: NextRequest) {
   try {

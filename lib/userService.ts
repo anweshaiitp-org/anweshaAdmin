@@ -17,13 +17,7 @@ const BASE = '/api/users';
 const ADMIN_BASE = '/api/admin/users';
 
 const getAuthHeaders = (isFormData = false) => {
-    // Note: In Next.js App Router, if you are calling this from Client Components, 
-    // localStorage is perfectly fine. If using Server Components, use cookies().
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`
-    };
+    const headers: Record<string, string> = {};
 
     if (!isFormData) {
         headers['Content-Type'] = 'application/json';
