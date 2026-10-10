@@ -29,16 +29,19 @@ export default function RegistrationsSection({ isDark, registrations }: Registra
                                     <thead className={`text-[11px] uppercase tracking-widest ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
                                         <tr>
                                             <th className="px-6 py-4">Event ID</th>
-                                            <th className="px-6 py-4">Payment</th>
+                                            <th className="px-6 py-4">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className={`divide-y ${isDark ? 'divide-slate-700/50' : 'divide-slate-100'}`}>
-                                        {registrations.solo!.map((reg: any, i: number) => (
-                                            <tr key={i} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
-                                                <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">{reg.event_id}</td>
-                                                <td className="px-6 py-4"><StatusBadge status={reg.payment_done ? 'PAID' : 'PENDING'} /></td>
-                                            </tr>
-                                        ))}
+                                        {registrations.solo!.map((reg: any, i: number) => {
+                                            const status = reg.payment_status || (reg.registration_status === 'CONFIRMED' ? 'PAID' : (reg.payment_done ? 'PAID' : 'PENDING'));
+                                            return (
+                                                <tr key={i} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
+                                                    <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">{reg.event_id}</td>
+                                                    <td className="px-6 py-4"><StatusBadge status={status} /></td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
@@ -59,15 +62,22 @@ export default function RegistrationsSection({ isDark, registrations }: Registra
                                         <tr>
                                             <th className="px-6 py-4">Event ID</th>
                                             <th className="px-6 py-4">Team ID</th>
+                                            <th className="px-6 py-4">Role</th>
+                                            <th className="px-6 py-4">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className={`divide-y ${isDark ? 'divide-slate-700/50' : 'divide-slate-100'}`}>
-                                        {registrations.team!.map((reg: any, i: number) => (
-                                            <tr key={i} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
-                                                <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">{reg.event_id}</td>
-                                                <td className="px-6 py-4 font-mono font-medium text-slate-600 dark:text-slate-400">{reg.team_id}</td>
-                                            </tr>
-                                        ))}
+                                        {registrations.team!.map((reg: any, i: number) => {
+                                            const status = reg.payment_status || (reg.registration_status === 'CONFIRMED' ? 'PAID' : 'PENDING');
+                                            return (
+                                                <tr key={i} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
+                                                    <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">{reg.event_id}</td>
+                                                    <td className="px-6 py-4 font-mono font-medium text-slate-600 dark:text-slate-400">{reg.team_id}</td>
+                                                    <td className="px-6 py-4 text-xs font-semibold text-slate-500">{reg.role || 'MEMBER'}</td>
+                                                    <td className="px-6 py-4"><StatusBadge status={status} /></td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
