@@ -111,7 +111,7 @@ export default function IntegratedAdminDashboard() {
   const [broadcastConfirmed, setBroadcastConfirmed] = useState(false);
 
   // Payment Details Modal
-  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   /* ---- Theme tokens (blue scheme) ---- */
@@ -530,7 +530,7 @@ export default function IntegratedAdminDashboard() {
                 <li 
                   key={pmt.paymentId} 
                   onClick={() => {
-                    setSelectedPaymentId(pmt.paymentId);
+                    setSelectedPayment(pmt);
                     setIsPaymentModalOpen(true);
                   }}
                   className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-colors cursor-pointer group ${t.inner}`}
@@ -684,11 +684,12 @@ export default function IntegratedAdminDashboard() {
 
       {/* PAYMENT DETAILS MODAL */}
       <PaymentDetailsModal
-        paymentId={selectedPaymentId}
+        paymentId={selectedPayment?.paymentId || null}
+        payment={selectedPayment}
         isOpen={isPaymentModalOpen}
         onClose={() => {
           setIsPaymentModalOpen(false);
-          setSelectedPaymentId(null);
+          setSelectedPayment(null);
         }}
       />
     </div>

@@ -33,7 +33,7 @@ export default function PaymentListPage() {
   const [search, setSearch] = useState<string>('');
 
   // Payment Details Modal
-  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const loadPayments = useCallback(async (cursor?: string | null) => {
@@ -230,7 +230,7 @@ export default function PaymentListPage() {
                   <tr 
                     key={payment.paymentId} 
                     onClick={() => {
-                      setSelectedPaymentId(payment.paymentId);
+                      setSelectedPayment(payment);
                       setIsModalOpen(true);
                     }}
                     className={`transition-colors cursor-pointer group ${isDarkMode ? 'hover:bg-gray-700/40' : 'hover:bg-blue-50/50'}`}
@@ -262,7 +262,7 @@ export default function PaymentListPage() {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedPaymentId(payment.paymentId);
+                          setSelectedPayment(payment);
                           setIsModalOpen(true);
                         }}
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
@@ -297,11 +297,12 @@ export default function PaymentListPage() {
 
       {/* PAYMENT DETAILS MODAL */}
       <PaymentDetailsModal
-        paymentId={selectedPaymentId}
+        paymentId={selectedPayment?.paymentId || null}
+        payment={selectedPayment}
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          setSelectedPaymentId(null);
+          setSelectedPayment(null);
         }}
       />
     </div>
