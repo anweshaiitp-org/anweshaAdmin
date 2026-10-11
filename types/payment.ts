@@ -7,6 +7,7 @@ export interface PaymentRecord {
   domain: PaymentPurpose;
   event_id?: string;
   team_id?: string;
+  user_id?: string;
   amount: number;
   amount_paid?: number;
   payment_status: PaymentStatus;
@@ -15,7 +16,12 @@ export interface PaymentRecord {
   failure_reason?: string;
   full_name: string;
   anwesha_id: string;
+  email_id?: string;
+  phone_number?: string;
+  atom_txn_id?: string | null;
+  bank_txn_id?: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface PaymentAnalyticsResponse {

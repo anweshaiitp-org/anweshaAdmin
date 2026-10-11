@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { fetchPaymentDetails } from '@/lib/paymentService';
-import type { PaymentDetail } from '@/types/payment';
+import { fetchEvent } from '@/lib/eventService';
+import { fetchUserFullProfile } from '@/lib/userService';
+import type { PaymentDetail, PaymentRecord } from '@/types/payment';
 import { 
   FiX, 
   FiCopy, 
@@ -26,11 +28,12 @@ import {
 
 interface PaymentDetailsModalProps {
   paymentId: string | null;
+  payment?: PaymentRecord | PaymentDetail | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function PaymentDetailsModal({ paymentId, isOpen, onClose }: PaymentDetailsModalProps) {
+export default function PaymentDetailsModal({ paymentId, payment, isOpen, onClose }: PaymentDetailsModalProps) {
   const { isDarkMode } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,37 +42,132 @@ export default function PaymentDetailsModal({ paymentId, isOpen, onClose }: Paym
   const [showRawJson, setShowRawJson] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || !paymentId) {
+    if (!isOpen || (!paymentId && !payment)) {
       setDetail(null);
       setError('');
       return;
     }
 
     let isMounted = true;
-    const loadDetails = async () => {
+
+    // 1. If payment object is already provided, immediately hydrate detail state
+    if (payment) {
+      const initialDetail: PaymentDetail = {
+        ...payment,
+        paymentId: payment.paymentId || paymentId || '',
+        merch_txn_id: payment.merch_txn_id,
+        domain: payment.domain,
+        event_id: payment.event_id,
+        team_id: payment.team_id,
+        user_id: payment.user_id,
+        amount: payment.amount,
+        amount_paid: payment.amount_paid ?? payment.amount,
+        payment_status: payment.payment_status,
+        payment_mode: payment.payment_mode,
+        bank_name: payment.bank_name,
+        failure_reason: payment.failure_reason,
+        atom_txn_id: payment.atom_txn_id,
+        bank_txn_id: payment.bank_txn_id,
+        created_at: payment.created_at,
+        updated_at: payment.updated_at,
+        full_name: payment.full_name,
+        anwesha_id: payment.anwesha_id,
+        email_id: payment.email_id,
+        phone_number: payment.phone_number,
+        payer: (payment as PaymentDetail).payer || {
+          user_id: payment.user_id,
+          full_name: payment.full_name,
+          anwesha_id: payment.anwesha_id,
+          email_id: payment.email_id,
+          phone_number: payment.phone_number,
+        },
+        event: (payment as PaymentDetail).event || null,
+        team: (payment as PaymentDetail).team || null,
+        raw: (payment as any).raw || payment,
+      };
+      setDetail(initialDetail);
+      setLoading(false);
+
+      // Async enrichment: Event Details
+      if (payment.event_id && !initialDetail.event?.name) {
+        fetchEvent(payment.event_id)
+          .then((evRes) => {
+            if (isMounted && evRes?.event) {
+              setDetail((prev) => (prev ? { ...prev, event: evRes.event } : prev));
+            }
+          })
+          .catch(() => {});
+      }
+
+      // Async enrichment: User Details
+      if (payment.user_id && !initialDetail.payer?.college_name) {
+        fetchUserFullProfile(payment.user_id)
+          .then((uRes: any) => {
+            const u = uRes?.user || uRes?.data?.user || uRes?.data;
+            if (isMounted && u) {
+              setDetail((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  payer: {
+                    ...prev.payer,
+                    user_id: u.user_id || prev.payer?.user_id,
+                    anwesha_id: u.anwesha_id || prev.payer?.anwesha_id,
+                    full_name: u.full_name || prev.payer?.full_name,
+                    email_id: u.email_id || prev.payer?.email_id,
+                    phone_number: u.phone_number || prev.payer?.phone_number,
+                    college_name: u.college_name || u.collage_name || prev.payer?.college_name,
+                    user_type: u.user_type || prev.payer?.user_type,
+                    role: u.role || prev.payer?.role,
+                    is_email_verified: u.is_email_verified ?? prev.payer?.is_email_verified,
+                    id_card_status: u.id_card_status || prev.payer?.id_card_status,
+                  },
+                };
+              });
+            }
+          })
+          .catch(() => {});
+      }
+    } else {
       setLoading(true);
-      setError('');
-      try {
-        const res = await fetchPaymentDetails(paymentId);
-        if (isMounted) {
-          if (res.success && res.payment) {
-            setDetail(res.payment);
-          } else {
+    }
+
+    // 2. Query endpoint if paymentId exists
+    const targetId = paymentId || payment?.paymentId;
+    if (targetId) {
+      fetchPaymentDetails(targetId)
+        .then((res) => {
+          if (isMounted && res.success && res.payment) {
+            setDetail((prev) => {
+              if (!prev) return res.payment;
+              return {
+                ...prev,
+                ...res.payment,
+                payer: res.payment.payer || prev.payer,
+                event: res.payment.event || prev.event,
+                team: res.payment.team || prev.team,
+                raw: res.payment.raw || prev.raw,
+              };
+            });
+            setError('');
+          } else if (isMounted && !payment) {
             setError(res.message || 'Payment not found');
           }
-        }
-      } catch (err: any) {
-        if (isMounted) setError(err.message || 'Failed to load payment details');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
+        })
+        .catch((err: any) => {
+          if (isMounted && !payment) {
+            setError(err.message || 'Failed to load payment details');
+          }
+        })
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
+    }
 
-    loadDetails();
     return () => {
       isMounted = false;
     };
-  }, [isOpen, paymentId]);
+  }, [isOpen, paymentId, payment]);
 
   if (!isOpen) return null;
 
@@ -128,7 +226,7 @@ export default function PaymentDetailsModal({ paymentId, isOpen, onClose }: Paym
                 Transaction Details
               </h2>
               <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                ID: <span className="font-mono">{paymentId}</span>
+                ID: <span className="font-mono">{paymentId || detail?.paymentId}</span>
               </p>
             </div>
           </div>
@@ -174,7 +272,7 @@ export default function PaymentDetailsModal({ paymentId, isOpen, onClose }: Paym
                 <div className="text-right space-y-1.5">
                   <StatusBadge status={detail.payment_status} />
                   <p className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {detail.domain.replace('_', ' ')}
+                    {detail.domain ? detail.domain.replace('_', ' ') : 'N/A'}
                   </p>
                 </div>
               </div>
