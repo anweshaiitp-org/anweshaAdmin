@@ -56,6 +56,11 @@ export default function DocumentsSection({
 
     const hasCollegeDoc = Boolean(profile.college_id_card || profile.identity_card);
     const collegeIdNumber = profile.college_id_number || (profile.id_card_type !== 'AADHAR' ? profile.id_card_number : null) || 'Not provided';
+    const isCollegePdf = Boolean(
+        (profile.college_id_card && profile.college_id_card.toLowerCase().endsWith('.pdf')) ||
+        (profile.identity_card && profile.identity_card.toLowerCase().endsWith('.pdf')) ||
+        (profile.college_id_url && profile.college_id_url.toLowerCase().includes('.pdf'))
+    );
 
     const hasAadharDoc = Boolean(profile.aadhar_card || (profile.id_card_type === 'AADHAR' && profile.identity_card));
     const aadharIdNumber = profile.aadhar_id_number || (profile.id_card_type === 'AADHAR' ? profile.id_card_number : null) || 'Not provided';
@@ -113,20 +118,30 @@ export default function DocumentsSection({
                             </div>
 
                             {/* Document Preview Box */}
-                            <div className={`relative aspect-[16/9] rounded-xl border-2 flex flex-col items-center justify-center p-4 mb-4 ${
+                            <div className={`relative aspect-[16/9] rounded-xl border-2 flex flex-col items-center justify-center p-4 mb-4 overflow-hidden ${
                                 isDark ? 'border-slate-800 bg-slate-950/40' : 'border-slate-200 bg-white'
                             }`}>
                                 {hasCollegeDoc ? (
-                                    <div className="flex flex-col items-center text-center">
-                                        <div className={`p-3 rounded-full mb-2 ${
-                                            isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'
-                                        }`}>
-                                            <FiFileText size={26} />
+                                    profile.college_id_url && !isCollegePdf ? (
+                                        <div className="relative w-full h-full flex items-center justify-center">
+                                            <img
+                                                src={profile.college_id_url}
+                                                alt="College ID Preview"
+                                                className="max-h-full max-w-full object-contain rounded-lg"
+                                            />
                                         </div>
-                                        <p className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                                            College ID on File (PDF)
-                                        </p>
-                                    </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center text-center">
+                                            <div className={`p-3 rounded-full mb-2 ${
+                                                isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'
+                                            }`}>
+                                                {isCollegePdf ? <FiFileText size={26} /> : <FiImage size={26} />}
+                                            </div>
+                                            <p className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                {isCollegePdf ? 'College ID on File (PDF)' : 'College ID on File (Image)'}
+                                            </p>
+                                        </div>
+                                    )
                                 ) : (
                                     <div className={`flex flex-col items-center ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
                                         <FiImage size={32} className="mb-1.5" />

@@ -4,6 +4,7 @@ import type {
   GlobalRegistrationsResponse,
   EventRegistrationsResponse,
   TeamDetailsResponse,
+  ExportRegistrationsResponse,
 } from '@/types/registration';
 
 const BASE = '/api/admin/registration';
@@ -165,4 +166,43 @@ export async function fetchTeamDetails(
   }
 
   return data as TeamDetailsResponse;
+}
+
+/**
+  * Fetch enriched successful event registrations for document dossier export (DOCX/PDF).
+  * Includes participant details and presigned S3 ID card URLs.
+  */
+export async function fetchEventRegistrationsExport(
+  eventId: string,
+  accommodation: 'all' | 'with' | 'without' = 'all'
+): Promise<ExportRegistrationsResponse> {
+  if (!eventId) {
+    throw new Error('Event ID is required');
+  }
+
+  const params = new URLSearchParams({
+    accommodation,
+  });
+
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(eventId)}/export?${params.toString()}`,
+    {
+      cache: 'no-store',
+    }
+  );
+
+  if (!res.ok) {
+    const message = await getErrorMessage(
+      res,
+      `Failed to load export data for event (${res.status})`
+    );
+    throw new Error(message);
+  }
+
+  const data = await res.json();
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid export response received from server');
+  }
+
+  return data as ExportRegistrationsResponse;
 }

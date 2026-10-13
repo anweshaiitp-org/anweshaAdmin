@@ -15,6 +15,7 @@
     "@yudiel/react-qr-scanner": "^2.6.0",
     "axios": "^1.18.0",
     "bcryptjs": "^3.0.3",
+    "docx": "^9.10.0",
     "framer-motion": "^12.42.0",
     "ioredis": "^6.0.0",
     "jspdf": "^4.2.1",

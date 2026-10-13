@@ -217,3 +217,32 @@ export interface TeamDetailsResponse {
     }[];
   };
 }
+
+export interface ExportParticipantItem {
+  registration_id: string;
+  user_id: string;
+  anwesha_id: string;
+  full_name: string;
+  email_id: string;
+  contact: string;
+  phone_number: string;
+  aadhar_id_number: string;
+  college_name: string;
+  accomadation_selected: boolean;
+  college_id_card: string | null;
+  college_id_url: string | null;
+  payment_status: string;
+  registration_status: string;
+  has_attended: boolean;
+  date_of_registration?: string;
+}
+
+export interface ExportRegistrationsResponse {
+  success: boolean;
+  event_id: string;
+  event_name: string;
+  registration_type: 'solo';
+  total_count: number;
+  accommodation_filter: 'all' | 'with' | 'without';
+  data: ExportParticipantItem[];
+}
