@@ -44,6 +44,7 @@ export interface Event {
   is_special?: boolean;          // Flag indicating special event / fest pass
   special_event_type?: SpecialEventType; // FEST, FEST_PASS, GARBA, PRONITE, etc.
   ca_points?: number;            // Custom CA points awarded on registration
+  exit_enabled_at?: string | null;
   created_at: number;            // Epoch timestamp
   updated_at: number;            // Epoch timestamp
 }

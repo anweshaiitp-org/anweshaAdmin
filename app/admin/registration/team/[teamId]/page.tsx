@@ -438,6 +438,12 @@ export default function TeamDetailsPage() {
                                                 </span>
                                             )}
 
+                                            {member.exited_at && (
+                                                <span className="block mt-1 text-rose-500 text-xs font-semibold">
+                                                    Exited {new Date(member.exited_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
+                                                </span>
+                                            )}
+
                                         </td>
 
                                     </tr>

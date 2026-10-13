@@ -9,16 +9,18 @@ import type { Event } from '@/types/events';
 import { DetailSkeleton } from '@/components/events/EventLoadingSkeleton';
 import ErrorState from '@/components/events/ErrorState';
 import DeleteConfirmModal from '@/components/events/DeleteConfirmModal';
+import ExitAllModal from '@/components/events/ExitAllModal';
 import toast from 'react-hot-toast';
 import { 
   FiEdit2, FiArrowLeft, FiCalendar, FiMapPin, FiUsers, 
-  FiDollarSign, FiGlobe, FiExternalLink, FiVideo, FiClock, FiTrash2, FiInfo, FiImage, FiAward, FiStar
+  FiDollarSign, FiGlobe, FiExternalLink, FiVideo, FiClock, FiTrash2, FiInfo, FiImage, FiAward, FiStar, FiLogOut
 } from 'react-icons/fi';
 
 export default function ViewEventPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const router = useRouter();
-  const { isDarkMode } = useAuth();
+  const { isDarkMode, user: authUser } = useAuth();
+  const [showExitAllModal, setShowExitAllModal] = useState(false);
   
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -149,6 +151,18 @@ export default function ViewEventPage() {
           >
             <FiEdit2 size={16} /> Edit Event
           </Link>
+          {event.exit_enabled_at && ['SUPER_ADMIN', 'ADMIN'].includes(authUser?.role || '') && (
+            <button
+              onClick={() => setShowExitAllModal(true)}
+              className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex-1 md:flex-none border ${
+                isDarkMode
+                  ? 'bg-gray-800 border-rose-900/50 text-rose-400 hover:bg-rose-900/30'
+                  : 'bg-white border-rose-200 text-rose-600 hover:bg-rose-50'
+              }`}
+            >
+              <FiLogOut size={16} /> Exit Everyone Inside
+            </button>
+          )}
           <button
             onClick={() => setShowDeleteModal(true)}
             className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex-1 md:flex-none border ${
@@ -289,6 +303,7 @@ export default function ViewEventPage() {
             {event.registration_deadline && (
               <SidebarItem icon={FiClock} label="Registration Deadline" value={formatDate(event.registration_deadline)} />
             )}
+            <SidebarItem icon={FiLogOut} label="Exit Opens" value={event.exit_enabled_at ? formatDate(event.exit_enabled_at) : 'Exit off'} />
             <div className={`h-px w-full my-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`} />
             <SidebarItem icon={FiMapPin} label="Venue" value={event.is_online ? 'Online Platform' : (event.venue || 'TBA')} />
             <SidebarItem icon={FiUsers} label="Team Size" value={`${event.min_team_size} – ${event.max_team_size} members`} />
@@ -318,6 +333,15 @@ export default function ViewEventPage() {
 
         </div>
       </div>
+
+      {showExitAllModal && (
+        <ExitAllModal
+          isDark={isDarkMode}
+          eventId={event.id}
+          eventName={event.name}
+          onClose={() => setShowExitAllModal(false)}
+        />
+      )}
 
       {/* Delete Modal Component */}
       <DeleteConfirmModal

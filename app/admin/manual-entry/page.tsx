@@ -68,6 +68,9 @@ export default function ManualBulkEntryPage() {
     full_name: string;
     event_id?: string;
     registration_id?: string;
+    is_new_user?: boolean;
+    credentials_sent?: boolean;
+    ticket_sent?: boolean;
   }>>([]);
 
   const [failedRows, setFailedRows] = useState<Array<{
@@ -764,7 +767,7 @@ Rahul Singh\trahul.singh@example.com\t9123456780\t\tBIT Mesra`;
               <FiCheckCircle size={22} />
               <div>
                 <h3 className="text-base font-bold">Successfully Registered ({successList.length})</h3>
-                <p className="text-xs opacity-80">User accounts created with secure cryptographic credentials and IDs</p>
+                <p className="text-xs opacity-80">New accounts are emailed their username and password. Existing accounts keep their login and only get the ticket.</p>
               </div>
             </div>
           </div>
@@ -778,6 +781,7 @@ Rahul Singh\trahul.singh@example.com\t9123456780\t\tBIT Mesra`;
                   <th className="px-4 py-2.5 border-b border-emerald-800/30">Full Name</th>
                   <th className="px-4 py-2.5 border-b border-emerald-800/30">Email Address</th>
                   <th className="px-4 py-2.5 border-b border-emerald-800/30">Event Registered</th>
+                  <th className="px-4 py-2.5 border-b border-emerald-800/30">Emails</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${dark ? 'divide-emerald-900/40 text-gray-200' : 'divide-emerald-200/60 text-gray-800'}`}>
@@ -795,6 +799,37 @@ Rahul Singh\trahul.singh@example.com\t9123456780\t\tBIT Mesra`;
                       ) : (
                         <span className="opacity-60">General User</span>
                       )}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {user.is_new_user ? (
+                          <span
+                            title={user.credentials_sent ? undefined : 'Ask the attendee to use Forgot Password on the login page'}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              user.credentials_sent
+                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                            }`}
+                          >
+                            {user.credentials_sent ? 'Login emailed' : 'Login not sent'}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-gray-500/10 text-gray-400 border-gray-500/20">
+                            Existing account
+                          </span>
+                        )}
+                        {user.event_id && (
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              user.ticket_sent
+                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                            }`}
+                          >
+                            {user.ticket_sent ? 'Ticket emailed' : 'Ticket not sent'}
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

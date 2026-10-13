@@ -4,6 +4,8 @@ import type {
   GlobalRegistrationsResponse,
   EventRegistrationsResponse,
   TeamDetailsResponse,
+  ExitAttendeeResponse,
+  ExitAllResponse,
 } from '@/types/registration';
 
 const BASE = '/api/admin/registration';
@@ -165,4 +167,46 @@ export async function fetchTeamDetails(
   }
 
   return data as TeamDetailsResponse;
+}
+
+export async function exitAttendee(
+  userId: string,
+  eventId: string
+): Promise<ExitAttendeeResponse> {
+  const res = await fetch(`${BASE}/exit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId, event_id: eventId }),
+  });
+
+  if (!res.ok) {
+    const message = await getErrorMessage(
+      res,
+      `Failed to exit attendee (${res.status})`
+    );
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
+export async function exitEveryoneInside(
+  eventId: string,
+  dryRun: boolean
+): Promise<ExitAllResponse> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(eventId)}/exit-all`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dry_run: dryRun }),
+  });
+
+  if (!res.ok) {
+    const message = await getErrorMessage(
+      res,
+      `Failed to exit attendees (${res.status})`
+    );
+    throw new Error(message);
+  }
+
+  return res.json();
 }

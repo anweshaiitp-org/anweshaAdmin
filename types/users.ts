@@ -13,6 +13,9 @@ export interface User {
   id_card_status?: string; // 'PENDING', 'APPROVED', 'REJECTED'
   id_card_url?: string;
   dob?: string;
+  mainGate_status?: 'INSIDE' | 'OUTSIDE';
+  festArena_status?: 'INSIDE' | 'OUTSIDE';
+  ticket_revoked_at?: string;
   created_at: string;
   updated_at: string;
 }
