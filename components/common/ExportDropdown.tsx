@@ -95,6 +95,17 @@ export default function ExportDropdown({
             <span>Export as .CSV</span>
           </button>
           <button
+            onClick={() => handleSelectFormat('excel')}
+            className={`w-full px-3.5 py-2 text-xs font-semibold flex items-center gap-2.5 transition-colors ${
+              isDarkMode
+                ? 'hover:bg-gray-800 text-green-400'
+                : 'hover:bg-green-50 text-green-700'
+            }`}
+          >
+            <FiTable size={15} />
+            <span>Export as .Excel (.xlsx)</span>
+          </button>
+          <button
             onClick={() => handleSelectFormat('pdf')}
             className={`w-full px-3.5 py-2 text-xs font-semibold flex items-center gap-2.5 transition-colors ${
               isDarkMode

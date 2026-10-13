@@ -1,16 +1,43 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { fetchUsers } from '@/lib/userService';
 import { fetchAllRegistrations, fetchEventRegistrationsPaginated } from '@/lib/registrationService';
 import { fetchEvents, fetchSpecialEvents } from '@/lib/eventService';
 import { fetchPaymentList } from '@/lib/paymentService';
 import { toast } from 'react-hot-toast';
 
-export type ExportFormat = 'csv' | 'pdf';
+export type ExportFormat = 'csv' | 'pdf' | 'excel';
 
 // ==========================================
-// 1. CSV & PDF CORE GENERATORS
+// 1. CSV, EXCEL & PDF CORE GENERATORS
 // ==========================================
+
+export const downloadExcel = (
+  filename: string,
+  sheetName: string,
+  headers: string[],
+  rows: (string | number | boolean | null | undefined)[][]
+) => {
+  const worksheetData = [
+    headers,
+    ...rows.map(row => row.map(cell => (cell === null || cell === undefined ? '' : cell)))
+  ];
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName || 'Data');
+  
+  const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
 
 export const downloadCSV = (filename: string, headers: string[], rows: (string | number | boolean | null | undefined)[][]) => {
   const escapeCell = (val: any) => {
@@ -477,3 +504,63 @@ export const exportAllPayments = async (format: ExportFormat, onProgress?: (msg:
     toast.error(`Export failed: ${err?.message || 'Error fetching payments'}`);
   }
 };
+
+/**
+ * Exports Gate Attendees (Inside or Outside) to CSV, Excel, or PDF
+ */
+export const exportGateAttendees = (
+  gate: string,
+  status: string,
+  attendees: any[],
+  format: ExportFormat
+) => {
+  if (!attendees || attendees.length === 0) {
+    toast.error('No attendees to export');
+    return;
+  }
+
+  const gateLabel = gate === 'MAIN_GATE' ? 'Main Gate' : 'Fest Arena';
+  const statusLabel = status === 'INSIDE' ? 'Inside' : 'Outside';
+  const title = `${gateLabel} — Attendees Currently ${statusLabel}`;
+
+  const headers = [
+    'Name',
+    'Email',
+    'Phone Number',
+    'College',
+    'Anwesha ID',
+    'Gate',
+    'Status'
+  ];
+
+  const rows = attendees.map(u => [
+    u.name || u.full_name || 'N/A',
+    u.email || u.email_id || 'N/A',
+    u.phone || u.phone_number || 'N/A',
+    u.college || u.collage_name || u.college_name || 'N/A',
+    u.anwesha_id || 'N/A',
+    gateLabel,
+    statusLabel
+  ]);
+
+  const dateStr = new Date().toISOString().split('T')[0];
+  const filename = `gate_attendees_${gate.toLowerCase()}_${status.toLowerCase()}_${dateStr}`;
+
+  if (format === 'csv') {
+    downloadCSV(filename, headers, rows);
+    toast.success(`Exported ${attendees.length} attendees as .CSV!`);
+  } else if (format === 'excel') {
+    downloadExcel(filename, 'Attendees', headers, rows);
+    toast.success(`Exported ${attendees.length} attendees as .Excel (.xlsx)!`);
+  } else {
+    downloadPDF(
+      title,
+      `Comprehensive list of attendees verified ${statusLabel.toLowerCase()} at ${gateLabel}`,
+      headers,
+      rows,
+      filename
+    );
+    toast.success(`Exported ${attendees.length} attendees as .PDF!`);
+  }
+};
+
