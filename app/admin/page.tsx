@@ -223,6 +223,7 @@ export default function IntegratedAdminDashboard() {
   const quickActions = [
     { label: 'Gate attendees', sub: 'Inside & outside roster', icon: FiUsers, tone: 'emerald', href: '/admin/gate/attendees' },
     { label: 'Manual registration', sub: 'Spot & bulk import', icon: FiUserPlus, tone: 'blue', href: '/admin/manual-entry' },
+    { label: 'ID Card Export', sub: 'DOCX & PDF dossier', icon: FiDownload, tone: 'sky', href: '/admin/registration/export' },
     { label: 'Broadcast tickets', sub: 'All attendees', icon: FiSend, tone: 'indigo', onClick: openBroadcast },
     { label: 'Create special pass', sub: 'Fest / Garba', icon: FiStar, tone: 'sky', href: '/admin/events/create' },
     { label: 'Gate QR scanner', sub: 'Entry validation', icon: FiCpu, tone: 'blue', href: '/admin/scanner' },
@@ -285,6 +286,12 @@ export default function IntegratedAdminDashboard() {
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 border border-white/25 backdrop-blur transition-colors active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <FiUserPlus size={14} /> Manual entry
+            </Link>
+            <Link
+              href="/admin/registration/export"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-sky-500/25 hover:bg-sky-500/35 text-sky-100 border border-sky-400/30 backdrop-blur transition-colors active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 shadow-sm"
+            >
+              <FiDownload size={14} className="text-sky-300" /> ID Card Export
             </Link>
             <button
               onClick={() => loadDashboardData(true)}

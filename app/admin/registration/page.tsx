@@ -20,6 +20,7 @@ import {
   FiBarChart2,
   FiPieChart,
   FiStar,
+  FiDownload,
 } from 'react-icons/fi';
 
 import ErrorState from '@/components/events/ErrorState';
@@ -165,8 +166,17 @@ export default function RegistrationDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <ExportDropdown label="Export All Registrations" onExport={exportAllRegistrations} />
+          <Link
+            href="/admin/registration/export"
+            className={`inline-flex items-center gap-2 px-4 h-10 rounded-xl text-xs font-bold transition-colors ${
+              isDarkMode ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
+            }`}
+          >
+            <FiDownload size={15} />
+            ID Dossier Export
+          </Link>
           <Link
             href="/admin/registration/events"
             className={`inline-flex items-center gap-2 px-4 h-10 rounded-xl text-xs font-bold transition-colors ${
