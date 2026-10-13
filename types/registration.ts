@@ -14,6 +14,7 @@ export interface SoloParticipant {
   payment_status: PaymentStatus;
   registration_status: string;
   has_attended: boolean;
+  exited_at?: string;
 
   date_of_registration?: string;
 }
@@ -43,6 +44,7 @@ export interface TeamMember {
 
   role: string;
   has_attended: boolean;
+  exited_at?: string;
 }
 
 
@@ -174,6 +176,7 @@ export interface SoloRegistrationRow {
   payment_status: PaymentStatus;
   registration_status: string;
   has_attended: boolean;
+  exited_at?: string;
   date_of_registration: string;
 }
 
@@ -214,6 +217,44 @@ export interface TeamDetailsResponse {
       phone_number: string;
       role: string;
       has_attended: boolean;
+      exited_at?: string;
     }[];
   };
+}
+
+export interface ExitPass {
+  event_id: string;
+  event_name: string;
+  name: string;
+  anwesha_id: string;
+  phone_number: string;
+  email_id: string;
+  id_card_type: string | null;
+  id_card_number: string;
+  entered_at: string | null;
+  exited_at: string;
+}
+
+export interface ExitAttendeeResponse {
+  success: boolean;
+  already_exited?: boolean;
+  message: string;
+  exit?: ExitPass;
+}
+
+export interface ExitAllSummary {
+  confirmed: number;
+  already_exited: number;
+  inside: number;
+  not_inside: number;
+  exited: number;
+  failed: number;
+}
+
+export interface ExitAllResponse {
+  success: boolean;
+  dry_run: boolean;
+  event_id: string;
+  event_name: string;
+  summary: ExitAllSummary;
 }

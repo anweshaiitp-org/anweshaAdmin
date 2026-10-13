@@ -71,7 +71,10 @@ export async function createEvent(data: Partial<EventFormData>): Promise<EventDe
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to create event');
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to create event');
+  }
   return res.json();
 }
 
@@ -87,7 +90,10 @@ export async function updateEvent(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to update event');
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to update event');
+  }
   return res.json();
 }
 

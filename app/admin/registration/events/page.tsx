@@ -383,6 +383,7 @@ function RegistrationEventsPage() {
                             <th className="px-6 py-4 font-bold">Email</th>
                             <th className="px-6 py-4 font-bold">Phone</th>
                             <th className="px-6 py-4 font-bold text-center">Payment</th>
+                            <th className="px-6 py-4 font-bold text-center">Exited</th>
                           </>
                         ) : (
                           <>
@@ -408,6 +409,11 @@ function RegistrationEventsPage() {
                             <td className={`px-6 py-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{p.email_id}</td>
                             <td className={`px-6 py-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{p.phone_number}</td>
                             <td className="px-6 py-4 text-center"><PaymentBadge status={p.payment_status} /></td>
+                            <td className={`px-6 py-4 text-center text-xs font-semibold ${p.exited_at ? 'text-rose-500' : isDarkMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                              {p.exited_at
+                                ? new Date(p.exited_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+                                : '—'}
+                            </td>
                           </tr>
                         ))
                         : eventData.data.map((t: any, idx: number) => (

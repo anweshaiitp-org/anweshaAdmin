@@ -11,10 +11,12 @@ import {
     requestIdCard,
     fetchDocumentUrl,
     generateAndEmailTicket,
-    fetchUserTicketDetails
+    fetchUserTicketDetails,
+    restoreUserTicket
 } from '@/lib/userService';
 import toast from 'react-hot-toast';
-import { FiArrowLeft, FiLoader, FiAlertCircle, FiX } from 'react-icons/fi';
+import { FiArrowLeft, FiLoader, FiAlertCircle, FiX, FiSlash, FiLogOut } from 'react-icons/fi';
+import ExitUserModal from '@/components/users/ExitUserModal';
 
 import ProfileSummary from '@/components/userdetail/ProfileSummary';
 import PersonalInfoSection from '@/components/userdetail/Personalinfosection';
@@ -58,6 +60,8 @@ export default function UserDetailPage() {
     const [isGeneratingTicket, setIsGeneratingTicket] = useState(false);
     const [ticketData, setTicketData] = useState<any>(null);
     const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+    const [isRestoringTicket, setIsRestoringTicket] = useState(false);
+    const [isExitModalOpen, setIsExitModalOpen] = useState(false);
  
     const loadUserData = async () => {
         setLoading(true);
@@ -275,6 +279,23 @@ export default function UserDetailPage() {
             toast.error(error.message, { id: toastId });
         }
     };
+
+    const handleRestoreTicket = async () => {
+        const name = userData?.profile?.full_name || 'this attendee';
+        if (!window.confirm(`Restore the QR for ${name}? They will be able to enter through the gate again.`)) return;
+
+        setIsRestoringTicket(true);
+        const toastId = toast.loading('Restoring QR...');
+        try {
+            await restoreUserTicket(userId);
+            toast.success('QR restored. The attendee can enter again.', { id: toastId });
+            await loadUserData();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to restore QR', { id: toastId });
+        } finally {
+            setIsRestoringTicket(false);
+        }
+    };
  
     if (loading) {
         return (
@@ -303,6 +324,9 @@ export default function UserDetailPage() {
     const { profile, festPass, registrations, transactions } = userData;
     const canManageRoles = authUser?.role === 'SUPER_ADMIN';
     const canVerifyIds = ['SUPER_ADMIN', 'ADMIN', 'MODERATOR'].includes(authUser?.role || '');
+    const canRestoreTicket = ['SUPER_ADMIN', 'ADMIN'].includes(authUser?.role || '');
+    const canExitUser = ['SUPER_ADMIN', 'ADMIN', 'MODERATOR', 'VOLUNTEER'].includes(authUser?.role || '');
+    const isInside = profile.mainGate_status === 'INSIDE' || profile.festArena_status === 'INSIDE';
  
     return (
         <div className="w-full max-w-5xl mx-auto space-y-6 md:space-y-8 pb-10">
@@ -331,8 +355,50 @@ export default function UserDetailPage() {
                         </p>
                     </div>
                 </div>
+                {canExitUser && isInside && !profile.ticket_revoked_at && (
+                    <button
+                        onClick={() => setIsExitModalOpen(true)}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border transition-colors ${
+                            isDarkMode ? 'border-rose-800/60 text-rose-400 hover:bg-rose-900/30' : 'border-rose-200 text-rose-600 hover:bg-rose-50'
+                        }`}
+                    >
+                        <FiLogOut size={16} /> Exit
+                    </button>
+                )}
             </div>
  
+            {profile.ticket_revoked_at && (
+                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl border ${
+                    isDarkMode ? 'bg-rose-950/30 border-rose-800/60' : 'bg-rose-50 border-rose-200'
+                }`}>
+                    <div className="flex items-start gap-3">
+                        <FiSlash size={22} className="text-rose-500 mt-0.5 shrink-0" />
+                        <div>
+                            <p className={`text-sm font-bold ${isDarkMode ? 'text-rose-300' : 'text-rose-700'}`}>QR revoked after exit</p>
+                            <p className={`text-xs mt-1 ${isDarkMode ? 'text-rose-200/70' : 'text-rose-600/80'}`}>
+                                Exited{profile.ticket_revoked_event_id ? <> from <span className="font-mono">{profile.ticket_revoked_event_id}</span></> : null} on{' '}
+                                {new Date(profile.ticket_revoked_at).toLocaleString('en-IN', {
+                                    timeZone: 'Asia/Kolkata',
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: 'numeric',
+                                    minute: '2-digit'
+                                })}. Gate scanners deny re-entry until the QR is restored.
+                            </p>
+                        </div>
+                    </div>
+                    {canRestoreTicket && (
+                        <button
+                            onClick={handleRestoreTicket}
+                            disabled={isRestoringTicket}
+                            className="px-5 py-2.5 rounded-xl text-sm font-bold bg-rose-600 hover:bg-rose-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                        >
+                            {isRestoringTicket ? 'Restoring…' : 'Restore QR'}
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* Profile summary strip */}
             <ProfileSummary
                 isDark={isDarkMode}
@@ -420,6 +486,18 @@ export default function UserDetailPage() {
  
             {enlargedUrl && (
                 <EnlargedPhotoModal url={enlargedUrl} onClose={() => setEnlargedUrl('')} />
+            )}
+
+            {isExitModalOpen && (
+                <ExitUserModal
+                    isDark={isDarkMode}
+                    userId={profile.user_id}
+                    userName={profile.full_name}
+                    onClose={(exited) => {
+                        setIsExitModalOpen(false);
+                        if (exited) loadUserData();
+                    }}
+                />
             )}
 
             {/* Ticket SVG Modal */}
