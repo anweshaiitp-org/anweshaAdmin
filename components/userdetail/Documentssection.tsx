@@ -9,7 +9,10 @@ import {
     FiCheck,
     FiXCircle,
     FiSend,
-    FiRefreshCw
+    FiRefreshCw,
+    FiBookOpen,
+    FiCreditCard,
+    FiShield
 } from 'react-icons/fi';
 import { SectionCard, SectionHeader, StatusBadge } from './SharedUI';
 
@@ -19,8 +22,8 @@ interface DocumentsSectionProps {
     fetchingDoc: boolean;
     canVerifyIds: boolean;
     processingIdAction: boolean;
-    onViewDocument: (docType: 'profile' | 'id_card') => void;
-    onDownloadDocument: (docType: 'profile' | 'id_card') => void;
+    onViewDocument: (docType: 'profile' | 'college_id' | 'aadhar_id' | 'id_card') => void;
+    onDownloadDocument: (docType: 'profile' | 'college_id' | 'aadhar_id' | 'id_card') => void;
     onApprove: () => void;
     onOpenReject: () => void;
     onRequestUpload: () => void;
@@ -51,198 +54,308 @@ export default function DocumentsSection({
         onRequestUpload();
     };
 
+    const hasCollegeDoc = Boolean(profile.college_id_card || profile.identity_card);
+    const collegeIdNumber = profile.college_id_number || (profile.id_card_type !== 'AADHAR' ? profile.id_card_number : null) || 'Not provided';
+
+    const hasAadharDoc = Boolean(profile.aadhar_card || (profile.id_card_type === 'AADHAR' && profile.identity_card));
+    const aadharIdNumber = profile.aadhar_id_number || (profile.id_card_type === 'AADHAR' ? profile.id_card_number : null) || 'Not provided';
+
     return (
         <SectionCard isDark={isDark}>
             <SectionHeader
                 icon={FiFileText}
-                title="Identity Card Verification"
+                title="Identity Documents Verification"
                 isDark={isDark}
                 accent="amber"
                 action={<StatusBadge status={profile.id_card_status} />}
             />
 
-            <div className="p-6 md:p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 md:p-8 space-y-6">
+                {/* ── Two Document Cards: College ID & Aadhar ID ───────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                    {/* Secure Document Access Panel */}
-                    <div className={`relative aspect-[16/10] rounded-2xl border-2 flex flex-col items-center justify-center p-6 ${
-                        isDark
-                            ? 'border-slate-700 bg-slate-900/50'
-                            : 'border-slate-200 bg-slate-50'
+                    {/* 1. College ID Card */}
+                    <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
+                        isDark ? 'bg-slate-900/60 border-slate-700/60' : 'bg-slate-50/80 border-slate-200'
                     }`}>
-                        {profile.identity_card ? (
-                            <div className="flex flex-col items-center w-full">
-                                <div className={`p-4 rounded-full mb-4 ${
-                                    isDark
-                                        ? 'bg-blue-500/20 text-blue-400'
-                                        : 'bg-blue-100 text-blue-600'
-                                }`}>
-                                    <FiFileText size={32} />
+                        <div>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2.5">
+                                    <div className={`p-2.5 rounded-xl ${
+                                        isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'
+                                    }`}>
+                                        <FiBookOpen size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                            College ID Card
+                                        </h4>
+                                        <p className="text-[11px] text-slate-400">Student Identity Verification</p>
+                                    </div>
                                 </div>
-
-                                <p className={`text-sm font-bold mb-6 ${
-                                    isDark ? 'text-slate-300' : 'text-slate-700'
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border ${
+                                    hasCollegeDoc
+                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                        : isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-200 text-slate-600 border-slate-300'
                                 }`}>
-                                    Secure Document on File
-                                </p>
-
-                                <div className="flex gap-3 w-full">
-                                    <button
-                                        onClick={() => onViewDocument('id_card')}
-                                        disabled={fetchingDoc}
-                                        className={`flex-1 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${
-                                            isDark
-                                                ? 'bg-slate-800 hover:bg-slate-700 text-white'
-                                                : 'bg-white hover:bg-slate-100 border text-slate-800 shadow-sm'
-                                        }`}
-                                    >
-                                        <FiEye size={16} /> View
-                                    </button>
-
-                                    <button
-                                        onClick={() => onDownloadDocument('id_card')}
-                                        disabled={fetchingDoc}
-                                        className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                                    >
-                                        <FiDownloadCloud size={16} /> Download
-                                    </button>
-                                </div>
+                                    {hasCollegeDoc ? 'Uploaded' : 'Missing'}
+                                </span>
                             </div>
-                        ) : (
-                            <div className={`flex flex-col items-center ${
-                                isDark ? 'text-slate-600' : 'text-slate-400'
+
+                            {/* ID Number Row */}
+                            <div className="flex justify-between items-center py-2.5 px-3 rounded-xl mb-4 bg-white/5 border border-white/5">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                    Roll / ID Number:
+                                </span>
+                                <span className={`text-xs font-mono font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                                    {collegeIdNumber}
+                                </span>
+                            </div>
+
+                            {/* Document Preview Box */}
+                            <div className={`relative aspect-[16/9] rounded-xl border-2 flex flex-col items-center justify-center p-4 mb-4 ${
+                                isDark ? 'border-slate-800 bg-slate-950/40' : 'border-slate-200 bg-white'
                             }`}>
-                                <FiImage size={40} className="mb-2" />
-                                <span className="text-sm font-bold">No ID Uploaded</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* ID Details and Actions */}
-                    <div className="flex flex-col gap-4 justify-center">
-                        {profile.id_card_type && (
-                            <div className="flex justify-between items-center pb-3 border-b border-dashed border-slate-300 dark:border-slate-700">
-                                <span className={`text-xs font-bold uppercase tracking-wider ${
-                                    isDark ? 'text-slate-400' : 'text-slate-500'
-                                }`}>
-                                    ID Type
-                                </span>
-
-                                <span className={`text-sm font-bold ${
-                                    isDark ? 'text-slate-200' : 'text-slate-800'
-                                }`}>
-                                    {profile.id_card_type.replace('_', ' ')}
-                                </span>
-                            </div>
-                        )}
-
-                        {profile.id_card_number && (
-                            <div className="flex justify-between items-center pb-3 border-b border-dashed border-slate-300 dark:border-slate-700">
-                                <span className={`text-xs font-bold uppercase tracking-wider ${
-                                    isDark ? 'text-slate-400' : 'text-slate-500'
-                                }`}>
-                                    ID Number
-                                </span>
-
-                                <span className={`text-sm font-bold font-mono ${
-                                    isDark ? 'text-slate-200' : 'text-slate-800'
-                                }`}>
-                                    {profile.id_card_number}
-                                </span>
-                            </div>
-                        )}
-
-                        {canVerifyIds && (
-                            <div className="mt-2">
-
-                                {/* Uploaded -> Needs Approval/Rejection */}
-                                {profile.id_card_status === 'UPLOADED' && (
-                                    <div className="flex gap-3 w-full">
-                                        <button
-                                            disabled={processingIdAction}
-                                            onClick={onApprove}
-                                            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                                        >
-                                            <FiCheck size={18} /> Approve
-                                        </button>
-
-                                        <button
-                                            disabled={processingIdAction}
-                                            onClick={onOpenReject}
-                                            className="flex-1 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                                        >
-                                            <FiXCircle size={18} /> Reject
-                                        </button>
+                                {hasCollegeDoc ? (
+                                    <div className="flex flex-col items-center text-center">
+                                        <div className={`p-3 rounded-full mb-2 ${
+                                            isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'
+                                        }`}>
+                                            <FiFileText size={26} />
+                                        </div>
+                                        <p className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                            College ID on File (PDF)
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className={`flex flex-col items-center ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                                        <FiImage size={32} className="mb-1.5" />
+                                        <span className="text-xs font-bold">No College ID Uploaded</span>
                                     </div>
                                 )}
+                            </div>
+                        </div>
 
-                                {/* Not uploaded -> First time request */}
-                                {profile.id_card_status === 'NOT_UPLOADED' && (
+                        {/* Actions */}
+                        <div className="flex gap-2.5">
+                            <button
+                                type="button"
+                                onClick={() => onViewDocument('college_id')}
+                                disabled={!hasCollegeDoc || fetchingDoc}
+                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                                    isDark
+                                        ? 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
+                                        : 'bg-white hover:bg-slate-100 border text-slate-800 shadow-sm'
+                                }`}
+                            >
+                                <FiEye size={14} /> View College ID
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onDownloadDocument('college_id')}
+                                disabled={!hasCollegeDoc || fetchingDoc}
+                                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                            >
+                                <FiDownloadCloud size={14} /> Download
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 2. Aadhar Card */}
+                    <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
+                        isDark ? 'bg-slate-900/60 border-slate-700/60' : 'bg-slate-50/80 border-slate-200'
+                    }`}>
+                        <div>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2.5">
+                                    <div className={`p-2.5 rounded-xl ${
+                                        isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'
+                                    }`}>
+                                        <FiCreditCard size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                            Aadhar Card
+                                        </h4>
+                                        <p className="text-[11px] text-slate-400">National UIDAI Verification</p>
+                                    </div>
+                                </div>
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border ${
+                                    hasAadharDoc
+                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                        : isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-200 text-slate-600 border-slate-300'
+                                }`}>
+                                    {hasAadharDoc ? 'Uploaded' : 'Missing'}
+                                </span>
+                            </div>
+
+                            {/* ID Number Row */}
+                            <div className="flex justify-between items-center py-2.5 px-3 rounded-xl mb-4 bg-white/5 border border-white/5">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                    Aadhar Number:
+                                </span>
+                                <span className={`text-xs font-mono font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                                    {aadharIdNumber}
+                                </span>
+                            </div>
+
+                            {/* Document Preview Box */}
+                            <div className={`relative aspect-[16/9] rounded-xl border-2 flex flex-col items-center justify-center p-4 mb-4 ${
+                                isDark ? 'border-slate-800 bg-slate-950/40' : 'border-slate-200 bg-white'
+                            }`}>
+                                {hasAadharDoc ? (
+                                    <div className="flex flex-col items-center text-center">
+                                        <div className={`p-3 rounded-full mb-2 ${
+                                            isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'
+                                        }`}>
+                                            <FiFileText size={26} />
+                                        </div>
+                                        <p className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                            Aadhar Card on File (PDF)
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className={`flex flex-col items-center ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                                        <FiImage size={32} className="mb-1.5" />
+                                        <span className="text-xs font-bold">No Aadhar Card Uploaded</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2.5">
+                            <button
+                                type="button"
+                                onClick={() => onViewDocument('aadhar_id')}
+                                disabled={!hasAadharDoc || fetchingDoc}
+                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                                    isDark
+                                        ? 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
+                                        : 'bg-white hover:bg-slate-100 border text-slate-800 shadow-sm'
+                                }`}
+                            >
+                                <FiEye size={14} /> View Aadhar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onDownloadDocument('aadhar_id')}
+                                disabled={!hasAadharDoc || fetchingDoc}
+                                className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                            >
+                                <FiDownloadCloud size={14} /> Download
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* ── Admin Review & Decision Controls ────────────────── */}
+                {canVerifyIds && (
+                    <div className={`p-5 rounded-2xl border ${
+                        isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                        {/* Uploaded -> Needs Approval/Rejection */}
+                        {profile.id_card_status === 'UPLOADED' && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                                    <FiShield size={14} className="text-amber-400" />
+                                    <span>Please inspect both College ID and Aadhar Card before approving verification.</span>
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-3">
                                     <button
                                         disabled={processingIdAction}
-                                        onClick={onRequestUpload}
-                                        className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                        onClick={onApprove}
+                                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-emerald-500/20 active:scale-95"
                                     >
-                                        <FiSend size={18} /> Request Upload
+                                        <FiCheck size={18} /> Approve Both Documents
                                     </button>
-                                )}
+                                    <button
+                                        disabled={processingIdAction}
+                                        onClick={onOpenReject}
+                                        className="flex-1 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-rose-500/20 active:scale-95"
+                                    >
+                                        <FiXCircle size={18} /> Reject & Request Re-upload
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
-                                {/* Not required -> Force Request ID button with confirmation */}
-                                {profile.id_card_status === 'NOT_REQUIRED' && (
-                                    <div className="space-y-3">
-                                        <div className={`p-4 rounded-xl text-center text-sm font-medium ${
-                                            isDark
-                                                ? 'bg-slate-800/60 text-slate-300'
-                                                : 'bg-slate-100 text-slate-600'
-                                        }`}>
-                                            ID Card verification is currently not required for this user.
-                                        </div>
+                        {/* Verified Banner */}
+                        {profile.id_card_status === 'VERIFIED' && (
+                            <div className="flex items-center justify-between flex-wrap gap-3">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
+                                    <p className="text-xs font-bold text-emerald-400">
+                                        Identity Verified — Both College ID and Aadhar ID have been approved.
+                                    </p>
+                                </div>
+                                <button
+                                    disabled={processingIdAction}
+                                    onClick={() => setShowRequestAgainModal(true)}
+                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
+                                >
+                                    <FiRefreshCw size={13} /> Re-request Upload
+                                </button>
+                            </div>
+                        )}
 
-                                        <button
-                                            disabled={processingIdAction}
-                                            onClick={() => setShowForceRequestModal(true)}
-                                            className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                                        >
-                                            <FiSend size={18} /> Force Request ID
-                                        </button>
+                        {/* Not uploaded -> First time request */}
+                        {profile.id_card_status === 'NOT_UPLOADED' && (
+                            <button
+                                disabled={processingIdAction}
+                                onClick={onRequestUpload}
+                                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            >
+                                <FiSend size={18} /> Request ID Upload (College + Aadhar)
+                            </button>
+                        )}
+
+                        {/* Not required -> Force Request ID button with confirmation */}
+                        {profile.id_card_status === 'NOT_REQUIRED' && (
+                            <div className="space-y-3">
+                                <div className={`p-3 rounded-xl text-center text-xs font-medium ${
+                                    isDark ? 'bg-slate-800/60 text-slate-300' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                    ID Card verification is currently not required for this user.
+                                </div>
+                                <button
+                                    disabled={processingIdAction}
+                                    onClick={() => setShowForceRequestModal(true)}
+                                    className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                >
+                                    <FiSend size={18} /> Force Request ID Upload
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Already requested OR Rejected -> Show Request Again flow */}
+                        {['REQUESTED', 'REJECTED'].includes(profile.id_card_status) && (
+                            <div className="space-y-3">
+                                {profile.id_card_status === 'REQUESTED' ? (
+                                    <div className={`p-3 rounded-xl text-center text-xs font-medium ${
+                                        isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'
+                                    }`}>
+                                        Upload link sent to user. Waiting for user to submit both College ID and Aadhar ID.
+                                    </div>
+                                ) : (
+                                    <div className={`p-3 rounded-xl text-center text-xs font-medium ${
+                                        isDark ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'
+                                    }`}>
+                                        Documents were rejected. You can generate a new upload link for the user.
                                     </div>
                                 )}
-
-                                {/* Already requested OR Rejected -> Show Request Again Modal flow */}
-                                {['REQUESTED', 'REJECTED'].includes(profile.id_card_status) && (
-                                    <div className="space-y-3">
-                                        {profile.id_card_status === 'REQUESTED' ? (
-                                            <div className={`p-4 rounded-xl text-center text-sm font-medium ${
-                                                isDark
-                                                    ? 'bg-amber-500/10 text-amber-400'
-                                                    : 'bg-amber-50 text-amber-600'
-                                            }`}>
-                                                Upload request already sent. Waiting for user to upload.
-                                            </div>
-                                        ) : (
-                                            <div className={`p-4 rounded-xl text-center text-sm font-medium ${
-                                                isDark
-                                                    ? 'bg-rose-500/10 text-rose-400'
-                                                    : 'bg-rose-50 text-rose-600'
-                                            }`}>
-                                                Document was rejected. You can request a new upload.
-                                            </div>
-                                        )}
-
-                                        <button
-                                            disabled={processingIdAction}
-                                            onClick={() => setShowRequestAgainModal(true)}
-                                            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                                        >
-                                            <FiRefreshCw size={17} />
-                                            Request Again
-                                        </button>
-                                    </div>
-                                )}
+                                <button
+                                    disabled={processingIdAction}
+                                    onClick={() => setShowRequestAgainModal(true)}
+                                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                >
+                                    <FiRefreshCw size={17} /> Request Documents Again
+                                </button>
                             </div>
                         )}
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Request Again Confirmation Modal */}
