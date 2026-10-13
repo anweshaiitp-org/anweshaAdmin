@@ -249,6 +249,8 @@ export interface ExportRegistrationsResponse {
   total_count: number;
   accommodation_filter: 'all' | 'with' | 'without';
   data: ExportParticipantItem[];
+}
+
 export interface ExitPass {
   event_id: string;
   event_name: string;
