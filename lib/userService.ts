@@ -532,3 +532,40 @@ export async function submitManualEntry(payload: {
   }
   return data;
 }
+
+export async function fetchGateAttendees(params: {
+  gate: string;
+  status: string;
+  search?: string;
+}): Promise<{
+  success: boolean;
+  users: Array<{
+    user_id: string;
+    name: string;
+    email: string;
+    phone: string;
+    college: string;
+    anwesha_id: string;
+    gate_status: string;
+    entry_time?: string;
+    exit_time?: string;
+  }>;
+  total: number;
+}> {
+  const sp = new URLSearchParams();
+  sp.set('gate', params.gate);
+  sp.set('status', params.status);
+  if (params.search) sp.set('search', params.search);
+
+  const res = await fetch(`/api/gate/users?${sp.toString()}`, {
+    cache: 'no-store',
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to fetch gate attendees');
+  }
+
+  return res.json();
+}
