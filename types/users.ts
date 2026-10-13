@@ -10,8 +10,14 @@ export interface User {
   role: string; // e.g., 'USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN'
   is_locked: boolean;
   is_email_verified: boolean;
-  id_card_status?: string; // 'PENDING', 'APPROVED', 'REJECTED'
+  id_card_status?: string; // 'PENDING', 'APPROVED', 'REJECTED', 'UPLOADED', 'REQUESTED'
   id_card_url?: string;
+  college_id_card?: string;
+  college_id_number?: string;
+  college_id_url?: string | null;
+  aadhar_card?: string;
+  aadhar_id_number?: string;
+  aadhar_id_url?: string | null;
   dob?: string;
   created_at: string;
   updated_at: string;

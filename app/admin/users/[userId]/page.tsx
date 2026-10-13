@@ -144,9 +144,10 @@ export default function UserDetailPage() {
     };
  
     // --- Document handlers ---
-    const handleViewDocument = async (docType: 'profile' | 'id_card') => {
+    const handleViewDocument = async (docType: 'profile' | 'college_id' | 'aadhar_id' | 'id_card') => {
         setFetchingDoc(true);
-        const toastId = toast.loading('Fetching secure document...');
+        const docLabel = docType === 'college_id' ? 'College ID' : docType === 'aadhar_id' ? 'Aadhar Card' : 'document';
+        const toastId = toast.loading(`Fetching secure ${docLabel}...`);
         try {
             const res = await fetchDocumentUrl(userId, docType, 'view');
             if (res.success && res.url) {
@@ -162,9 +163,10 @@ export default function UserDetailPage() {
         }
     };
  
-    const handleDownloadDocument = async (docType: 'profile' | 'id_card') => {
+    const handleDownloadDocument = async (docType: 'profile' | 'college_id' | 'aadhar_id' | 'id_card') => {
         setFetchingDoc(true);
-        const toastId = toast.loading('Generating secure download link...');
+        const docLabel = docType === 'college_id' ? 'College ID' : docType === 'aadhar_id' ? 'Aadhar Card' : 'document';
+        const toastId = toast.loading(`Generating secure ${docLabel} download link...`);
         try {
             const res = await fetchDocumentUrl(userId, docType, 'download');
             if (res.success && res.url) {

@@ -396,7 +396,7 @@ export async function verifyIdCard(
 
 export async function fetchDocumentUrl(
   userId: string,
-  type: 'profile' | 'id_card',
+  type: 'profile' | 'college_id' | 'aadhar_id' | 'id_card',
   mode: 'view' | 'download'
 ): Promise<{ success: boolean; url: string; message?: string }> {
   const sp = new URLSearchParams({ type, mode });
