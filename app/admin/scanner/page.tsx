@@ -593,8 +593,7 @@ export default function GateScannerPage() {
   const accentColor = isEntry ? "indigo" : "amber";
 
   return (
-    <div className="relative flex flex-col bg-[#050608] text-white overflow-hidden"
-      style={{ height: "calc(100vh - 0px)", minHeight: "100dvh" }}>
+    <div className="relative flex flex-col bg-[#050608] text-white overflow-hidden h-full w-full min-h-0">
 
       {/* ── Global Styles ─────────────────────────────────────────────── */}
       <style>{`
