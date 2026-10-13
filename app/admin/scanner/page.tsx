@@ -31,17 +31,8 @@ import {
   MapPin,
   ArrowUpRight,
   ArrowDownLeft,
-  Users,
-  Search,
-  ExternalLink,
-  FileSpreadsheet,
-  FileText,
-  RefreshCw,
-  FileDown,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { exportGateAttendees, type ExportFormat } from "@/lib/exportUtils";
-import { fetchGateAttendees } from "@/lib/userService";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -49,18 +40,6 @@ import { fetchGateAttendees } from "@/lib/userService";
 type GateType = "MAIN_GATE" | "FEST_ARENA";
 type ActionType = "ENTRY" | "EXIT";
 type ResultKind = "success" | "denied" | "warning";
-
-interface GateAttendee {
-  user_id: string;
-  name: string;
-  email: string;
-  phone: string;
-  college: string;
-  anwesha_id: string;
-  gate_status: string;
-  entry_time?: string;
-  exit_time?: string;
-}
 
 interface FestPassInfo {
   status: string;
@@ -492,302 +471,6 @@ function LogRow({ e }: { e: ScanLogEntry }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Attendees Modal (Who is Inside / Outside)
-// ─────────────────────────────────────────────────────────────────────────────
-function AttendeesModal({
-  isOpen,
-  initialGate,
-  initialStatus,
-  onClose,
-}: {
-  isOpen: boolean;
-  initialGate: GateType;
-  initialStatus: "INSIDE" | "OUTSIDE";
-  onClose: () => void;
-}) {
-  const [selectedGate, setSelectedGate] = useState<GateType>(initialGate);
-  const [selectedStatus, setSelectedStatus] = useState<"INSIDE" | "OUTSIDE">(initialStatus);
-  const [attendees, setAttendees] = useState<GateAttendee[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedGate(initialGate);
-      setSelectedStatus(initialStatus);
-      setSearch("");
-    }
-  }, [isOpen, initialGate, initialStatus]);
-
-  const loadData = useCallback(async (g: GateType, s: "INSIDE" | "OUTSIDE") => {
-    setLoading(true);
-    try {
-      const res = await fetchGateAttendees({ gate: g, status: s });
-      if (res.success && Array.isArray(res.users)) {
-        setAttendees(res.users);
-      } else {
-        setAttendees([]);
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to fetch attendees");
-      setAttendees([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      loadData(selectedGate, selectedStatus);
-    }
-  }, [isOpen, selectedGate, selectedStatus, loadData]);
-
-  if (!isOpen) return null;
-
-  const filteredAttendees = attendees.filter((u) => {
-    const q = search.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      (u.name || "").toLowerCase().includes(q) ||
-      (u.email || "").toLowerCase().includes(q) ||
-      (u.phone || "").toLowerCase().includes(q) ||
-      (u.college || "").toLowerCase().includes(q) ||
-      (u.anwesha_id || "").toLowerCase().includes(q)
-    );
-  });
-
-  const handleExport = (format: ExportFormat) => {
-    exportGateAttendees(selectedGate, selectedStatus, filteredAttendees, format);
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md"
-      onClick={onClose}
-      style={{ animation: "fadeIn 0.2s ease-out" }}
-    >
-      <div
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#080b11] border border-white/10 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden text-white"
-        onClick={(e) => e.stopPropagation()}
-        style={{ animation: "slideUp 0.3s cubic-bezier(0.16,1,0.3,1)" }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 bg-[#0e131f] border-b border-white/[0.08]">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-400">
-              <Users size={20} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold tracking-tight text-white">Gate Attendees</h2>
-                <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-white/10 text-white/80">
-                  {filteredAttendees.length} {filteredAttendees.length === 1 ? "person" : "people"}
-                </span>
-              </div>
-              <p className="text-[12px] text-slate-400 mt-0.5">
-                Real-time campus gate verification roster
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Gate selector pills */}
-            <div className="flex bg-black/40 border border-white/10 rounded-xl p-1">
-              <button
-                onClick={() => setSelectedGate("MAIN_GATE")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  selectedGate === "MAIN_GATE"
-                    ? "bg-indigo-500 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                Main Gate
-              </button>
-              <button
-                onClick={() => setSelectedGate("FEST_ARENA")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  selectedGate === "FEST_ARENA"
-                    ? "bg-indigo-500 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                Fest Arena
-              </button>
-            </div>
-
-            {/* Close button */}
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white transition-all ml-1"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Status Tab Toggle Bar */}
-        <div className="flex flex-wrap items-center justify-between px-6 py-3 bg-[#0a0e17] border-b border-white/[0.06] gap-3">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setSelectedStatus("INSIDE")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold tracking-wide transition-all ${
-                selectedStatus === "INSIDE"
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
-                  : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.05]"
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${selectedStatus === "INSIDE" ? "bg-emerald-400 animate-pulse" : "bg-emerald-500/40"}`} />
-              INSIDE VENUE
-            </button>
-
-            <button
-              onClick={() => setSelectedStatus("OUTSIDE")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold tracking-wide transition-all ${
-                selectedStatus === "OUTSIDE"
-                  ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
-                  : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.05]"
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${selectedStatus === "OUTSIDE" ? "bg-cyan-400 animate-pulse" : "bg-cyan-500/40"}`} />
-              OUTSIDE VENUE
-            </button>
-          </div>
-
-          {/* Export Action Buttons */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest hidden sm:inline">Export:</span>
-            <button
-              onClick={() => handleExport("csv")}
-              disabled={loading || filteredAttendees.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Export as CSV"
-            >
-              <FileDown size={13} />
-              <span>.CSV</span>
-            </button>
-            <button
-              onClick={() => handleExport("excel")}
-              disabled={loading || filteredAttendees.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-300 border border-green-500/30 text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Export as Excel"
-            >
-              <FileSpreadsheet size={13} />
-              <span>.Excel</span>
-            </button>
-            <button
-              onClick={() => handleExport("pdf")}
-              disabled={loading || filteredAttendees.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Export as PDF"
-            >
-              <FileText size={13} />
-              <span>.PDF</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="px-6 py-3 bg-[#080b11] border-b border-white/[0.04] flex items-center gap-3">
-          <div className="relative flex-1">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter by name, email, phone number, college..."
-              className="w-full bg-white/[0.04] border border-white/[0.08] text-white placeholder-slate-500 rounded-xl pl-10 pr-4 py-2 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 outline-none transition-all"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
-              >
-                <X size={13} />
-              </button>
-            )}
-          </div>
-
-          <button
-            onClick={() => loadData(selectedGate, selectedStatus)}
-            disabled={loading}
-            className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white border border-white/[0.06] transition-all disabled:opacity-50"
-            title="Refresh list"
-          >
-            <RefreshCw size={15} className={loading ? "animate-spin text-indigo-400" : ""} />
-          </button>
-        </div>
-
-        {/* Attendees Table / Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4" style={{ maxHeight: "calc(92vh - 220px)" }}>
-          {loading ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3 text-slate-400">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-              <p className="text-xs font-mono">Loading {selectedStatus.toLowerCase()} attendees...</p>
-            </div>
-          ) : filteredAttendees.length === 0 ? (
-            <div className="py-16 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
-                <Users size={24} className="text-slate-600" />
-              </div>
-              <p className="text-slate-300 font-semibold text-sm">No attendees found</p>
-              <p className="text-slate-500 text-xs mt-1">
-                {search ? "No attendees match your search query." : `No participants are currently marked as ${selectedStatus.toLowerCase()} at ${gateLabel(selectedGate)}.`}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.01]">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-white/[0.03] border-b border-white/[0.06] text-slate-400 font-bold uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-4">Name</th>
-                    <th className="py-3 px-4">Email</th>
-                    <th className="py-3 px-4">Phone Number</th>
-                    <th className="py-3 px-4">College</th>
-                    <th className="py-3 px-4">Anwesha ID</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.03]">
-                  {filteredAttendees.map((u) => (
-                    <tr key={u.user_id || u.anwesha_id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3 px-4 font-semibold">
-                        <a
-                          href={`/users/${encodeURIComponent(u.user_id)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 hover:underline group"
-                          title="Open user profile (users/:userId)"
-                        >
-                          <span>{u.name}</span>
-                          <ExternalLink size={12} className="opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                        </a>
-                      </td>
-                      <td className="py-3 px-4 text-slate-300 font-mono text-[11px]">
-                        {u.email}
-                      </td>
-                      <td className="py-3 px-4 text-slate-300 font-mono text-[11px]">
-                        {u.phone}
-                      </td>
-                      <td className="py-3 px-4 text-slate-300">
-                        {u.college}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="inline-block px-2 py-0.5 rounded-md bg-white/[0.05] border border-white/[0.08] text-slate-300 font-mono text-[10px]">
-                          {u.anwesha_id}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function GateScannerPage() {
@@ -799,8 +482,6 @@ export default function GateScannerPage() {
   const [showSheet, setShowSheet] = useState(false);
   const [log, setLog] = useState<ScanLogEntry[]>([]);
   const [showLog, setShowLog] = useState(false);
-  const [isAttendeesModalOpen, setIsAttendeesModalOpen] = useState(false);
-  const [attendeesModalStatus, setAttendeesModalStatus] = useState<"INSIDE" | "OUTSIDE">("INSIDE");
   const [cooldown, setCooldown] = useState(false);
   const [lastToken, setLastToken] = useState<string | null>(null);
   const [scanCount, setScanCount] = useState(0);
@@ -1011,85 +692,49 @@ export default function GateScannerPage() {
           >
             <Activity size={16} />
           </button>
-
-          {/* Attendees list toggle */}
-          <button
-            id="attendees-view-btn"
-            onClick={() => {
-              setAttendeesModalStatus("INSIDE");
-              setIsAttendeesModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] text-white/70 hover:text-white hover:bg-white/[0.06] text-[12px] font-bold transition-all duration-300"
-            title="View attendees who are inside and outside"
-          >
-            <Users size={16} className="text-emerald-400" />
-            <span className="hidden sm:inline">Attendees</span>
-          </button>
         </div>
       </div>
 
-      {/* ── Stats Bar ───────────────────────────────────────────── */}
+      {/* ── Stats Bar (Status Only) ─────────────────────────────────── */}
       {gateStats && gateStats[gate] && (
-        <div className="relative z-10 shrink-0 flex items-center justify-around px-4 py-2 bg-[#08090b]/80 border-b border-white/[0.04]">
+        <div className="relative z-10 shrink-0 flex items-center justify-around px-4 py-2.5 bg-[#08090b]/85 border-b border-white/[0.04]">
           <div className="flex flex-col items-center">
             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Total Entries</span>
-            <span className="text-white text-xs font-mono">{gateStats[gate].totalEntries}</span>
+            <span className="text-white text-xs font-mono font-bold mt-0.5">{gateStats[gate].totalEntries}</span>
           </div>
 
           <div className="w-px h-6 bg-white/[0.06]" />
 
-          {/* Inside Venue Button */}
-          <button
-            id="btn-view-inside"
-            onClick={() => {
-              setAttendeesModalStatus("INSIDE");
-              setIsAttendeesModalOpen(true);
-            }}
-            className="group flex flex-col items-center px-3 py-1 rounded-xl transition-all duration-200 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 cursor-pointer"
-            title="Click to view all attendees currently inside venue"
-          >
+          {/* Inside Venue Status */}
+          <div className="flex flex-col items-center">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
-              <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest group-hover:text-emerald-300 transition-colors">
-                Inside Venue
+              <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">
+                Inside
               </span>
             </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-emerald-400 text-xs font-mono font-bold">{gateStats[gate].inside}</span>
-              <span className="text-[9px] text-emerald-500/80 uppercase font-semibold underline underline-offset-2">View List</span>
-            </div>
-          </button>
+            <span className="text-emerald-400 text-xs font-mono font-bold mt-0.5">{gateStats[gate].inside}</span>
+          </div>
 
           <div className="w-px h-6 bg-white/[0.06]" />
 
-          {/* Outside Venue Button */}
-          <button
-            id="btn-view-outside"
-            onClick={() => {
-              setAttendeesModalStatus("OUTSIDE");
-              setIsAttendeesModalOpen(true);
-            }}
-            className="group flex flex-col items-center px-3 py-1 rounded-xl transition-all duration-200 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 cursor-pointer"
-            title="Click to view all attendees currently outside venue"
-          >
+          {/* Outside Venue Status */}
+          <div className="flex flex-col items-center">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.5)]" />
-              <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest group-hover:text-cyan-300 transition-colors">
-                Outside Venue
+              <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">
+                Outside
               </span>
             </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-cyan-400 text-xs font-mono font-bold">{gateStats[gate].outside}</span>
-              <span className="text-[9px] text-cyan-500/80 uppercase font-semibold underline underline-offset-2">View List</span>
-            </div>
-          </button>
+            <span className="text-cyan-400 text-xs font-mono font-bold mt-0.5">{gateStats[gate].outside}</span>
+          </div>
         </div>
       )}
 
       {/* ── Camera Scanner Area ──────────────────────────────────────── */}
       <div className="relative flex-1 overflow-hidden bg-black">
         <Scanner
-          paused={showSheet || isLoading || cooldown || isAttendeesModalOpen}
+          paused={showSheet || isLoading || cooldown}
           allowMultiple={true}
           onScan={(codes: IDetectedBarcode[]) => {
             if (codes.length > 0) handleScan(codes[0].rawValue);
@@ -1259,14 +904,6 @@ export default function GateScannerPage() {
           )}
         </div>
       </div>
-
-      {/* ── Attendees Modal (Inside / Outside) ────────────────────────── */}
-      <AttendeesModal
-        isOpen={isAttendeesModalOpen}
-        initialGate={gate}
-        initialStatus={attendeesModalStatus}
-        onClose={() => setIsAttendeesModalOpen(false)}
-      />
     </div>
   );
 }
