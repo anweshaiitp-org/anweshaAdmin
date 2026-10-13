@@ -13,7 +13,10 @@ interface UserTableProps {
   onSelectAll: (checked: boolean) => void;
   isLoading: boolean;
   onViewUser?: (userId: string) => void; // Expecting system user ID
+  onExitUser?: (user: User) => void;
 }
+
+const isInside = (user: User) => user.mainGate_status === 'INSIDE' || user.festArena_status === 'INSIDE';
 
 export default function UserTable({
   users = [],
@@ -21,7 +24,8 @@ export default function UserTable({
   onSelectUser,
   onSelectAll,
   isLoading,
-  onViewUser
+  onViewUser,
+  onExitUser
 }: UserTableProps) {
   const { isDarkMode } = useAuth();
   const router = useRouter();
@@ -68,6 +72,7 @@ export default function UserTable({
             <th className={`p-4 text-[11px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Role</th>
             <th className={`p-4 text-[11px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>College</th>
             <th className={`p-4 text-[11px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>ID Card</th>
+            <th className={`p-4 text-[11px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Gate</th>
           </tr>
         </thead>
         <tbody className={`divide-y ${isDarkMode ? 'divide-slate-700/50' : 'divide-slate-100'}`}>
@@ -144,6 +149,34 @@ export default function UserTable({
                 }`}>
                   {user.id_card_status?.replace('_', ' ') || 'NOT REQUESTED'}
                 </span>
+              </td>
+
+              <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                {user.ticket_revoked_at ? (
+                  <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-lg bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400">
+                    Exited
+                  </span>
+                ) : isInside(user) ? (
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+                      Inside
+                    </span>
+                    {onExitUser && (
+                      <button
+                        onClick={() => onExitUser(user)}
+                        className={`px-3 py-1 text-[11px] font-bold rounded-lg border transition-colors ${
+                          isDarkMode
+                            ? 'border-rose-800/60 text-rose-400 hover:bg-rose-900/30'
+                            : 'border-rose-200 text-rose-600 hover:bg-rose-50'
+                        }`}
+                      >
+                        Exit
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <span className={`text-xs ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>—</span>
+                )}
               </td>
             </tr>
           ))}

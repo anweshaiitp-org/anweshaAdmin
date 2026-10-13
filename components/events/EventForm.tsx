@@ -15,6 +15,13 @@ interface EventFormProps {
   initialData?: Partial<Event>;
 }
 
+const toLocalInputValue = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+};
+
 export default function EventForm({ initialData }: EventFormProps) {
   const router = useRouter();
   const { isDarkMode } = useAuth();
@@ -25,11 +32,12 @@ export default function EventForm({ initialData }: EventFormProps) {
     organizer: initialData?.organizer ? parseOrganizers(initialData.organizer).map(([n, r]) => `${n}:${r}`).join(', ') : '',
     venue: initialData?.venue || '',
     description: initialData?.description || '',
-    start_time: initialData?.start_time ? initialData.start_time.slice(0, 16) : '',
-    end_time: initialData?.end_time ? initialData.end_time.slice(0, 16) : '',
+    start_time: toLocalInputValue(initialData?.start_time),
+    end_time: toLocalInputValue(initialData?.end_time),
+    exit_enabled_at: toLocalInputValue(initialData?.exit_enabled_at),
     prize: initialData?.prize || '',
     registration_fee: initialData?.registration_fee ?? 0,
-    registration_deadline: initialData?.registration_deadline ? initialData.registration_deadline.slice(0, 16) : '',
+    registration_deadline: toLocalInputValue(initialData?.registration_deadline),
     video: initialData?.video || '',
     tags: initialData?.tags || [] as EventTag[],
     max_team_size: initialData?.max_team_size ?? 1,
@@ -71,6 +79,8 @@ export default function EventForm({ initialData }: EventFormProps) {
     if (formData.registration_fee < 0) errs.registration_fee = 'Fee cannot be negative';
     if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time)
       errs.end_time = 'End time must be after start time';
+    if (formData.exit_enabled_at && formData.start_time && formData.exit_enabled_at < formData.start_time)
+      errs.exit_enabled_at = 'Exit cannot open before the event starts';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -91,6 +101,9 @@ export default function EventForm({ initialData }: EventFormProps) {
         registration_deadline: formData.registration_deadline
           ? new Date(formData.registration_deadline).toISOString()
           : undefined,
+        exit_enabled_at: formData.exit_enabled_at
+          ? new Date(formData.exit_enabled_at).toISOString()
+          : isEditMode ? null : undefined,
       };
 
       let eventId = initialData?.id;
@@ -229,7 +242,7 @@ export default function EventForm({ initialData }: EventFormProps) {
       <h2 className={`text-sm font-bold uppercase tracking-wider mb-5 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
         Schedule
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <div>
           <label className={labelCls}>Start Time</label>
           <input type="datetime-local" className={inputCls} value={formData.start_time} onChange={(e) => update('start_time', e.target.value)} />
@@ -242,6 +255,23 @@ export default function EventForm({ initialData }: EventFormProps) {
         <div>
           <label className={labelCls}>Registration Deadline</label>
           <input type="datetime-local" className={inputCls} value={formData.registration_deadline} onChange={(e) => update('registration_deadline', e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>Exit Opens At</label>
+          <input type="datetime-local" className={inputCls} value={formData.exit_enabled_at} onChange={(e) => update('exit_enabled_at', e.target.value)} />
+          {errors.exit_enabled_at && <p className={errorCls}>{errors.exit_enabled_at}</p>}
+          <p className={`text-[10px] mt-1 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+            Attendees scanned in at the gate can exit from the app after this time. Exiting revokes their QR. Leave empty to keep exit off.
+          </p>
+          {formData.exit_enabled_at && (
+            <button
+              type="button"
+              onClick={() => update('exit_enabled_at', '')}
+              className={`mt-1 text-[11px] font-bold ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600'}`}
+            >
+              Turn off exit
+            </button>
+          )}
         </div>
       </div>
 

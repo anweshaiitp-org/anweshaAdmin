@@ -19,6 +19,9 @@ export interface User {
   aadhar_id_number?: string;
   aadhar_id_url?: string | null;
   dob?: string;
+  mainGate_status?: 'INSIDE' | 'OUTSIDE';
+  festArena_status?: 'INSIDE' | 'OUTSIDE';
+  ticket_revoked_at?: string;
   created_at: string;
   updated_at: string;
 }

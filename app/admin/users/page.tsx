@@ -7,6 +7,7 @@ import { User, InviteUserPayload } from '@/types/users';
 import { fetchUsers, searchAdminUsers, inviteUser, sendBroadcastEmail } from '@/lib/userService';
 import UserTable from '@/components/users/UserTable';
 import UserFormModal from '@/components/users/UserFormModal';
+import ExitUserModal from '@/components/users/ExitUserModal';
 import BroadcastModal from '@/components/users/BroadcastModal';
 import { FiSearch, FiRefreshCw, FiUserPlus, FiSend, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -35,6 +36,7 @@ export default function UsersDashboard() {
   // Modals State
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [exitTarget, setExitTarget] = useState<User | null>(null);
 
   const loadUsers = async (currentLastKey?: string) => {
     setLoading(true);
@@ -305,6 +307,7 @@ export default function UsersDashboard() {
           isLoading={loading}
           // Redirects using the pure system ID, safely encoded for URLs
           onViewUser={(userId) => router.push(`/admin/users/${encodeURIComponent(userId)}`)} 
+          onExitUser={setExitTarget}
         />
       </div>
 
@@ -334,6 +337,18 @@ export default function UsersDashboard() {
       </div>
 
       {/* Modals */}
+      {exitTarget && (
+        <ExitUserModal
+          isDark={isDarkMode}
+          userId={exitTarget.id}
+          userName={exitTarget.full_name}
+          onClose={(exited) => {
+            setExitTarget(null);
+            if (exited) loadUsers(lastKey);
+          }}
+        />
+      )}
+
       <UserFormModal 
         isOpen={isInviteModalOpen}
         mode="invite"

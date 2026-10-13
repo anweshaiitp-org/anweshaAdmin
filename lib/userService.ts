@@ -485,6 +485,16 @@ export async function fetchUserTicketDetails(userId: string) {
     return data;
 }
 
+export async function restoreUserTicket(userId: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/ticket/restore`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Failed to restore ticket');
+    return data;
+}
+
 // 3. Batch Broadcast Tickets to all registered attendees
 export async function batchBroadcastTickets(): Promise<{ success: boolean; message: string }> {
   const res = await fetch('/api/admin/tickets/broadcast', {
@@ -517,6 +527,9 @@ export async function submitManualEntry(payload: {
       full_name: string;
       event_id?: string;
       registration_id?: string;
+      is_new_user?: boolean;
+      credentials_sent?: boolean;
+      ticket_sent?: boolean;
     }>;
     failedRows: Array<{ record: any; reason: string }>;
   };
