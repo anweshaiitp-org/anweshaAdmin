@@ -42,15 +42,11 @@ export async function GET(req: NextRequest) {
     const json = await res.json();
     let rawList: any[] = json.data || json.users || [];
 
-    // Safety fallback: if backend didn't filter by gate status, filter client-side here
+    // Strict filtering: only users with matching gate status are included
     const statusField = gate === "FEST_ARENA" ? "festArena_status" : "mainGate_status";
     let filtered = rawList.filter((u: any) => {
-      const userGateStatus = u[statusField];
-      // If backend already filtered, userGateStatus might match or be omitted if not projected
-      if (userGateStatus) {
-        return String(userGateStatus).toUpperCase() === status;
-      }
-      return true;
+      const userGateStatus = u[statusField] ? String(u[statusField]).toUpperCase().trim() : null;
+      return userGateStatus === status;
     });
 
     // Optional text search filter

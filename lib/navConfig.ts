@@ -10,7 +10,8 @@ import {
   FiMaximize,
   FiZap,
   FiActivity,
-  FiUserPlus
+  FiUserPlus,
+  FiUsers
 } from "react-icons/fi";
 
 export const sidebarItems = [
@@ -24,5 +25,6 @@ export const sidebarItems = [
   { name: "Campus Ambassador", icon: FiAward, path: "/admin/ca" },
   { name: "Broadcast", icon: FiRadio, path: "/admin/broadcast/list" },
   { name: "Scanner", icon: FiMaximize, path: "/admin/scanner" },
+  { name: "Gate Attendees", icon: FiUsers, path: "/admin/gate/attendees" },
   { name: "System Logs", icon: FiActivity, path: "/admin/logs" },
 ];

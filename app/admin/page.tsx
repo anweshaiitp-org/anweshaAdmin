@@ -221,10 +221,11 @@ export default function IntegratedAdminDashboard() {
 
   /* ---- Quick actions ---- */
   const quickActions = [
+    { label: 'Gate attendees', sub: 'Inside & outside roster', icon: FiUsers, tone: 'emerald', href: '/admin/gate/attendees' },
     { label: 'Manual registration', sub: 'Spot & bulk import', icon: FiUserPlus, tone: 'blue', href: '/admin/manual-entry' },
     { label: 'Broadcast tickets', sub: 'All attendees', icon: FiSend, tone: 'indigo', onClick: openBroadcast },
     { label: 'Create special pass', sub: 'Fest / Garba', icon: FiStar, tone: 'sky', href: '/admin/events/create' },
-    { label: 'Gate QR scanner', sub: 'Entry validation', icon: FiCpu, tone: 'blue', href: '/admin/gate/scan' },
+    { label: 'Gate QR scanner', sub: 'Entry validation', icon: FiCpu, tone: 'blue', href: '/admin/scanner' },
     { label: 'CloudWatch logs', sub: 'Live log stream', icon: FiTerminal, tone: 'indigo', href: '/admin/logs' },
     { label: 'Broadcast email', sub: 'Mass marketing', icon: FiMail, tone: 'sky', href: '/admin/broadcast' },
     { label: 'Payment ledger', sub: 'By domain', icon: FiCreditCard, tone: 'emerald', href: '/admin/payment/list' },
@@ -273,6 +274,12 @@ export default function IntegratedAdminDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Link
+              href="/admin/gate/attendees"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-emerald-500/25 hover:bg-emerald-500/35 text-emerald-100 border border-emerald-400/30 backdrop-blur transition-colors active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 shadow-sm"
+            >
+              <FiUsers size={14} className="text-emerald-300" /> Gate attendees
+            </Link>
             <Link
               href="/admin/manual-entry"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 border border-white/25 backdrop-blur transition-colors active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
