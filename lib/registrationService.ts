@@ -197,6 +197,18 @@ export async function fetchEventRegistrationsExport(
     const message = await getErrorMessage(
       res,
       `Failed to load export data for event (${res.status})`
+    );
+    throw new Error(message);
+  }
+
+  const data = await res.json();
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid export response received from server');
+  }
+
+  return data as ExportRegistrationsResponse;
+}
+
 export async function exitAttendee(
   userId: string,
   eventId: string
@@ -215,12 +227,6 @@ export async function exitAttendee(
     throw new Error(message);
   }
 
-  const data = await res.json();
-  if (!data || typeof data !== 'object') {
-    throw new Error('Invalid export response received from server');
-  }
-
-  return data as ExportRegistrationsResponse;
   return res.json();
 }
 
