@@ -496,10 +496,29 @@ export async function restoreUserTicket(userId: string): Promise<{ success: bool
 }
 
 // 3. Batch Broadcast Tickets to all registered attendees
-export async function batchBroadcastTickets(): Promise<{ success: boolean; message: string }> {
+export type TicketBroadcastMode = 'PENDING' | 'FORCE';
+
+export interface TicketBroadcastSummary {
+  mode: TicketBroadcastMode;
+  dry_run: boolean;
+  total_users: number;
+  to_send?: number;
+  sent: number;
+  already_sent: number;
+  awaiting_verification: number;
+  revoked: number;
+  no_paid_registration: number;
+  missing_signature: number;
+  failed: number;
+}
+
+export async function batchBroadcastTickets(
+  options: { mode?: TicketBroadcastMode; dryRun?: boolean } = {}
+): Promise<{ success: boolean; message: string; summary?: TicketBroadcastSummary }> {
   const res = await fetch('/api/admin/tickets/broadcast', {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: options.mode || 'PENDING', dry_run: Boolean(options.dryRun) }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Failed to broadcast tickets');
@@ -529,7 +548,8 @@ export async function submitManualEntry(payload: {
       registration_id?: string;
       is_new_user?: boolean;
       credentials_sent?: boolean;
-      ticket_sent?: boolean;
+      id_upload_requested?: boolean;
+      id_card_status?: string | null;
     }>;
     failedRows: Array<{ record: any; reason: string }>;
   };

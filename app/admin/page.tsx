@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { fetchSpecialEvents, fetchEvents } from '@/lib/eventService';
 import { fetchAllRegistrations, fetchDashboardStats } from '@/lib/registrationService';
 import { fetchPaymentList } from '@/lib/paymentService';
-import { fetchUserDashboard, batchBroadcastTickets } from '@/lib/userService';
+import { fetchUserDashboard, batchBroadcastTickets, type TicketBroadcastMode, type TicketBroadcastSummary } from '@/lib/userService';
 import type { Event } from '@/types/events';
 import type { GlobalRegistrationItem } from '@/types/registration';
 import type { PaymentRecord } from '@/types/payment';
@@ -109,6 +109,10 @@ export default function IntegratedAdminDashboard() {
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [broadcastConfirmed, setBroadcastConfirmed] = useState(false);
+  const [broadcastMode, setBroadcastMode] = useState<TicketBroadcastMode>('PENDING');
+  const [broadcastPreview, setBroadcastPreview] = useState<TicketBroadcastSummary | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
 
   // Payment Details Modal
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
@@ -192,9 +196,32 @@ export default function IntegratedAdminDashboard() {
     return () => window.removeEventListener('keydown', onKey);
   }, [showBroadcastModal, isBroadcasting]);
 
+  const loadBroadcastPreview = async (mode: TicketBroadcastMode) => {
+    setPreviewLoading(true);
+    setPreviewError('');
+    setBroadcastPreview(null);
+    try {
+      const res = await batchBroadcastTickets({ mode, dryRun: true });
+      setBroadcastPreview(res.summary || null);
+    } catch (err: any) {
+      setPreviewError(err.message || 'Could not load the preview.');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const openBroadcast = () => {
     setBroadcastConfirmed(false);
+    setBroadcastMode('PENDING');
     setShowBroadcastModal(true);
+    loadBroadcastPreview('PENDING');
+  };
+
+  const changeBroadcastMode = (mode: TicketBroadcastMode) => {
+    if (mode === broadcastMode) return;
+    setBroadcastMode(mode);
+    setBroadcastConfirmed(false);
+    loadBroadcastPreview(mode);
   };
 
   const handleExecuteBroadcast = async () => {
@@ -204,7 +231,7 @@ export default function IntegratedAdminDashboard() {
     }
     setIsBroadcasting(true);
     try {
-      const res = await batchBroadcastTickets();
+      const res = await batchBroadcastTickets({ mode: broadcastMode });
       if (res.success) {
         toast.success(res.message || 'Ticket broadcast queued.');
         setShowBroadcastModal(false);
@@ -624,8 +651,8 @@ export default function IntegratedAdminDashboard() {
                 <FiAlertTriangle size={26} />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 id="broadcast-title" className="text-lg sm:text-xl font-bold tracking-tight">Send tickets to all attendees?</h3>
-                <p className={`text-xs mt-1 ${t.muted}`}>Queues a QR entry ticket email for everyone with a registration or pass.</p>
+                <h3 id="broadcast-title" className="text-lg sm:text-xl font-bold tracking-tight">Broadcast entry tickets</h3>
+                <p className={`text-xs mt-1 ${t.muted}`}>Only attendees with a paid registration and verified ID documents receive a ticket.</p>
               </div>
               <button
                 type="button"
@@ -638,14 +665,62 @@ export default function IntegratedAdminDashboard() {
               </button>
             </div>
 
+            <div role="radiogroup" aria-label="Who should receive tickets" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {([
+                { mode: 'PENDING', title: 'New tickets only', sub: 'Skips everyone who already received a ticket.' },
+                { mode: 'FORCE', title: 'Force resend', sub: 'Sends again to everyone eligible, already sent or not.' },
+              ] as const).map((option) => {
+                const active = broadcastMode === option.mode;
+                return (
+                  <button
+                    key={option.mode}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    disabled={isBroadcasting}
+                    onClick={() => changeBroadcastMode(option.mode)}
+                    className={`text-left p-3.5 rounded-xl border transition-colors ${
+                      active
+                        ? option.mode === 'FORCE'
+                          ? dark ? 'bg-amber-950/40 border-amber-500' : 'bg-amber-50 border-amber-400'
+                          : dark ? 'bg-blue-950/40 border-blue-500' : 'bg-blue-50 border-blue-400'
+                        : dark ? 'bg-gray-800 border-gray-700 hover:border-gray-600' : 'bg-white/60 border-gray-300/70 hover:border-gray-400'
+                    }`}
+                  >
+                    <span className="block text-sm font-bold">{option.title}</span>
+                    <span className={`block text-[11px] mt-0.5 ${t.muted}`}>{option.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             <div className={`p-4 rounded-2xl border text-xs leading-relaxed ${dark ? 'bg-blue-950/30 border-blue-900/50 text-blue-200' : 'bg-blue-100/60 border-blue-200/80 text-blue-900'}`}>
-              <p className="font-semibold flex items-center gap-1.5 mb-2"><FiShield size={14} /> Before you continue</p>
-              <ul className="list-disc pl-5 space-y-1 text-[12px] opacity-90 break-words">
-                <li>Each attendee gets a unique HMAC-SHA256 signed ticket.</li>
-                <li>Ticket type is set automatically: <code>FEST_PASS</code>, <code>EVENTS</code> or combined.</li>
-                <li>Emails go out in the background through AWS SES / SQS.</li>
-                <li>Users with no events or passes are skipped.</li>
-              </ul>
+              <p className="font-semibold flex items-center gap-1.5 mb-3"><FiShield size={14} /> Preview</p>
+              {previewLoading ? (
+                <p className="flex items-center gap-2"><FiRefreshCw size={13} className="animate-spin" /> Counting eligible attendees…</p>
+              ) : previewError ? (
+                <div className="space-y-2">
+                  <p className="text-red-500">{previewError}</p>
+                  <button type="button" className="underline font-semibold" onClick={() => loadBroadcastPreview(broadcastMode)}>Try again</button>
+                </div>
+              ) : broadcastPreview ? (
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px]">
+                  <dt className="opacity-80">Will receive a ticket</dt>
+                  <dd className="font-bold text-right">{broadcastPreview.to_send ?? 0}</dd>
+                  {broadcastMode === 'PENDING' && (
+                    <>
+                      <dt className="opacity-80">Already sent (skipped)</dt>
+                      <dd className="font-bold text-right">{broadcastPreview.already_sent}</dd>
+                    </>
+                  )}
+                  <dt className="opacity-80">Waiting for ID verification</dt>
+                  <dd className="font-bold text-right">{broadcastPreview.awaiting_verification}</dd>
+                  <dt className="opacity-80">Ticket revoked (exited)</dt>
+                  <dd className="font-bold text-right">{broadcastPreview.revoked}</dd>
+                  <dt className="opacity-80">No paid registration</dt>
+                  <dd className="font-bold text-right">{broadcastPreview.no_paid_registration}</dd>
+                </dl>
+              ) : null}
             </div>
 
             <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer select-none transition-colors ${
@@ -657,7 +732,11 @@ export default function IntegratedAdminDashboard() {
                 onChange={(e) => setBroadcastConfirmed(e.target.checked)}
                 className="mt-0.5 w-4 h-4 shrink-0 accent-blue-600 rounded"
               />
-              <span className="text-xs font-medium">I understand this sends emails to all attendees and want to continue.</span>
+              <span className="text-xs font-medium">
+                {broadcastMode === 'FORCE'
+                  ? 'I understand this re-sends tickets to everyone eligible, including people who already received one.'
+                  : 'I understand this emails tickets to everyone listed above who has not received one yet.'}
+              </span>
             </label>
 
             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
@@ -672,10 +751,10 @@ export default function IntegratedAdminDashboard() {
               <button
                 type="button"
                 onClick={handleExecuteBroadcast}
-                disabled={!broadcastConfirmed || isBroadcasting}
+                disabled={!broadcastConfirmed || isBroadcasting || previewLoading || !broadcastPreview || !broadcastPreview.to_send}
                 className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isBroadcasting ? (<><FiRefreshCw size={14} className="animate-spin" /> Sending…</>) : (<><FiSend size={14} /> Send tickets</>)}
+                {isBroadcasting ? (<><FiRefreshCw size={14} className="animate-spin" /> Sending…</>) : (<><FiSend size={14} /> {broadcastPreview?.to_send ? `Send ${broadcastPreview.to_send} ticket${broadcastPreview.to_send === 1 ? '' : 's'}` : 'Nothing to send'}</>)}
               </button>
             </div>
           </div>

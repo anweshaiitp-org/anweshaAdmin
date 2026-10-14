@@ -70,7 +70,8 @@ export default function ManualBulkEntryPage() {
     registration_id?: string;
     is_new_user?: boolean;
     credentials_sent?: boolean;
-    ticket_sent?: boolean;
+    id_upload_requested?: boolean;
+    id_card_status?: string | null;
   }>>([]);
 
   const [failedRows, setFailedRows] = useState<Array<{
@@ -767,7 +768,7 @@ Rahul Singh\trahul.singh@example.com\t9123456780\t\tBIT Mesra`;
               <FiCheckCircle size={22} />
               <div>
                 <h3 className="text-base font-bold">Successfully Registered ({successList.length})</h3>
-                <p className="text-xs opacity-80">New accounts are emailed their username and password. Existing accounts keep their login and only get the ticket.</p>
+                <p className="text-xs opacity-80">New accounts are emailed their login details. Everyone with a paid registration gets an email to upload their college ID and Aadhaar; tickets go out from Broadcast tickets after the ID is verified.</p>
               </div>
             </div>
           </div>
@@ -818,17 +819,20 @@ Rahul Singh\trahul.singh@example.com\t9123456780\t\tBIT Mesra`;
                             Existing account
                           </span>
                         )}
-                        {user.event_id && (
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                              user.ticket_sent
-                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                            }`}
-                          >
-                            {user.ticket_sent ? 'Ticket emailed' : 'Ticket not sent'}
-                          </span>
-                        )}
+                        {user.event_id && (() => {
+                          const idBadge = user.id_upload_requested
+                            ? { label: 'ID upload requested', tone: 'bg-sky-500/10 text-sky-400 border-sky-500/20' }
+                            : user.id_card_status === 'VERIFIED'
+                              ? { label: 'ID verified · in ticket queue', tone: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' }
+                              : user.id_card_status === 'UPLOADED'
+                                ? { label: 'ID awaiting review', tone: 'bg-amber-500/10 text-amber-500 border-amber-500/20' }
+                                : { label: 'ID request not sent', tone: 'bg-rose-500/10 text-rose-400 border-rose-500/20' };
+                          return (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${idBadge.tone}`}>
+                              {idBadge.label}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </td>
                   </tr>

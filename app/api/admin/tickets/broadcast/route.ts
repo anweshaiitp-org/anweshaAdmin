@@ -7,6 +7,7 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   const token = (session as any)?.accessToken;
   const url = `${BACKEND_URL}/admin/tickets/broadcast`;
+  const body = await req.text().catch(() => '');
 
   try {
     const res = await fetch(url, {
@@ -14,7 +15,8 @@ export async function POST(req: NextRequest) {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
-      }
+      },
+      body: body || '{}'
     });
 
     if (!res.ok) {
