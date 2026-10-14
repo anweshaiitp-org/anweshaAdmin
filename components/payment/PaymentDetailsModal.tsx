@@ -23,23 +23,32 @@ import {
   FiTag, 
   FiCode, 
   FiExternalLink,
-  FiRefreshCw
+  FiRefreshCw,
+  FiTrash2,
+  FiEdit2
 } from 'react-icons/fi';
+import toast from 'react-hot-toast';
+import { adminDeletePayment } from '@/lib/paymentService';
+import EditPaymentModal from './EditPaymentModal';
 
 interface PaymentDetailsModalProps {
   paymentId: string | null;
   payment?: PaymentRecord | PaymentDetail | null;
   isOpen: boolean;
   onClose: () => void;
+  onPaymentChanged?: () => void;
 }
 
-export default function PaymentDetailsModal({ paymentId, payment, isOpen, onClose }: PaymentDetailsModalProps) {
-  const { isDarkMode } = useAuth();
+export default function PaymentDetailsModal({ paymentId, payment, isOpen, onClose, onPaymentChanged }: PaymentDetailsModalProps) {
+  const { isDarkMode, user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [detail, setDetail] = useState<PaymentDetail | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!isOpen || (!paymentId && !payment)) {
@@ -463,7 +472,45 @@ export default function PaymentDetailsModal({ paymentId, payment, isOpen, onClos
         </div>
 
         {/* FOOTER */}
-        <div className={`p-5 border-t flex justify-end gap-3 ${isDarkMode ? 'border-gray-800 bg-gray-900/50' : 'border-gray-100 bg-gray-50'}`}>
+        <div className={`p-5 border-t flex flex-wrap items-center justify-between gap-3 ${isDarkMode ? 'border-gray-800 bg-gray-900/50' : 'border-gray-100 bg-gray-50'}`}>
+          <div className="flex items-center gap-2">
+            {isSuperAdmin && detail && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow transition-all"
+                >
+                  <FiEdit2 size={13} /> Edit Payment
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const idToDelete = paymentId || detail?.paymentId;
+                    if (!idToDelete) return;
+                    if (!window.confirm(`Are you sure you want to delete payment ${idToDelete}? This action cannot be undone.`)) {
+                      return;
+                    }
+                    setDeleting(true);
+                    try {
+                      const res = await adminDeletePayment(idToDelete);
+                      toast.success(res.message || 'Payment deleted successfully');
+                      onPaymentChanged?.();
+                      onClose();
+                    } catch (err: any) {
+                      toast.error(err.message || 'Failed to delete payment');
+                    } finally {
+                      setDeleting(false);
+                    }
+                  }}
+                  disabled={deleting}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow transition-all disabled:opacity-50"
+                >
+                  <FiTrash2 size={13} /> {deleting ? 'Deleting...' : 'Delete Payment'}
+                </button>
+              </>
+            )}
+          </div>
           <button
             onClick={onClose}
             className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -474,6 +521,26 @@ export default function PaymentDetailsModal({ paymentId, payment, isOpen, onClos
           </button>
         </div>
       </div>
+
+      {/* EDIT PAYMENT MODAL */}
+      <EditPaymentModal
+        isOpen={isEditOpen}
+        isDark={isDarkMode}
+        payment={detail}
+        onClose={() => setIsEditOpen(false)}
+        onSuccess={() => {
+          setIsEditOpen(false);
+          onPaymentChanged?.();
+          const targetId = paymentId || detail?.paymentId;
+          if (targetId) {
+            fetchPaymentDetails(targetId)
+              .then((res) => {
+                if (res?.payment) setDetail(res.payment);
+              })
+              .catch(() => {});
+          }
+        }}
+      />
     </div>
   );
 }

@@ -177,3 +177,79 @@ export async function GET(
     );
   }
 }
+
+export async function PUT(
+  req: NextRequest,
+  props: { params: Promise<{ paymentId: string }> }
+) {
+  const params = await props.params;
+  const { paymentId } = params;
+
+  if (!paymentId) {
+    return NextResponse.json({ success: false, message: 'Payment ID is required' }, { status: 400 });
+  }
+
+  const session = await auth();
+  const token = (session as any)?.accessToken || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+  if (!token) {
+    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const url = `${BACKEND_URL}/payment/admin/${encodeURIComponent(paymentId)}`;
+    const backendRes = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await backendRes.json();
+    return NextResponse.json(data, { status: backendRes.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, message: err.message || 'Failed to update payment' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  props: { params: Promise<{ paymentId: string }> }
+) {
+  const params = await props.params;
+  const { paymentId } = params;
+
+  if (!paymentId) {
+    return NextResponse.json({ success: false, message: 'Payment ID is required' }, { status: 400 });
+  }
+
+  const session = await auth();
+  const token = (session as any)?.accessToken || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+  if (!token) {
+    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const url = `${BACKEND_URL}/payment/admin/${encodeURIComponent(paymentId)}`;
+    const backendRes = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await backendRes.json();
+    return NextResponse.json(data, { status: backendRes.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, message: err.message || 'Failed to delete payment' },
+      { status: 500 }
+    );
+  }
+}

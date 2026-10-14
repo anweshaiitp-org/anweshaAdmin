@@ -287,3 +287,27 @@ export interface ExitAllResponse {
   event_name: string;
   summary: ExitAllSummary;
 }
+
+export interface AdminEditRegistrationPayload {
+  type: 'solo' | 'team' | 'team_member';
+  event_id?: string;
+  user_id?: string;
+  anwesha_id?: string;
+  team_id?: string;
+  team_name?: string;
+  payment_status?: string;
+  registration_status?: string;
+  amount_paid?: number;
+  payment_id?: string;
+  has_attended?: boolean;
+  leader_anwesha_id?: string;
+  role?: string;
+}
+
+export interface AdminDeleteRegistrationPayload {
+  type: 'solo' | 'team' | 'team_member';
+  event_id?: string;
+  user_id?: string;
+  anwesha_id?: string;
+  team_id?: string;
+}

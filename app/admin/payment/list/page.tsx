@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { fetchPaymentList } from '@/lib/paymentService';
+import { fetchPaymentList, adminDeletePayment } from '@/lib/paymentService';
 import type { PaymentRecord, PaymentPurpose } from '@/types/payment';
-import { FiArrowLeft, FiRefreshCw, FiSearch, FiFilter, FiEye } from 'react-icons/fi';
+import { FiArrowLeft, FiRefreshCw, FiSearch, FiFilter, FiEye, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 import ErrorState from '@/components/events/ErrorState';
 import Link from 'next/link';
 import PaymentDetailsModal from '@/components/payment/PaymentDetailsModal';
+import EditPaymentModal from '@/components/payment/EditPaymentModal';
 import ExportDropdown from '@/components/common/ExportDropdown';
 import { exportAllPayments } from '@/lib/exportUtils';
 
@@ -22,7 +24,8 @@ const DOMAINS: Array<'ALL' | PaymentPurpose> = [
 ];
 
 export default function PaymentListPage() {
-  const { isDarkMode } = useAuth();
+  const { isDarkMode, user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +38,10 @@ export default function PaymentListPage() {
   // Payment Details Modal
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Edit Payment Modal
+  const [editingPayment, setEditingPayment] = useState<PaymentRecord | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const loadPayments = useCallback(async (cursor?: string | null) => {
     if (!cursor) setLoading(true);
@@ -259,18 +266,55 @@ export default function PaymentListPage() {
                       <StatusBadge status={payment.payment_status} />
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPayment(payment);
-                          setIsModalOpen(true);
-                        }}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-                          isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-blue-400' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
-                        }`}
-                      >
-                        <FiEye size={13} /> View
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          onClick={() => {
+                            setSelectedPayment(payment);
+                            setIsModalOpen(true);
+                          }}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
+                            isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-blue-400' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+                          }`}
+                        >
+                          <FiEye size={13} /> View
+                        </button>
+                        {isSuperAdmin && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingPayment(payment);
+                                setIsEditModalOpen(true);
+                              }}
+                              title="Super Admin Edit"
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-colors ${
+                                isDarkMode ? 'bg-amber-900/30 hover:bg-amber-900/50 text-amber-400 border border-amber-800/40' : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
+                              }`}
+                            >
+                              <FiEdit2 size={13} /> Edit
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm(`Are you sure you want to delete payment ${payment.paymentId}? This cannot be undone.`)) {
+                                  return;
+                                }
+                                try {
+                                  const res = await adminDeletePayment(payment.paymentId);
+                                  toast.success(res.message || 'Payment deleted');
+                                  loadPayments();
+                                } catch (err: any) {
+                                  toast.error(err.message || 'Failed to delete payment');
+                                }
+                              }}
+                              title="Super Admin Delete"
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-colors ${
+                                isDarkMode ? 'bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 border border-rose-800/40' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
+                              }`}
+                            >
+                              <FiTrash2 size={13} /> Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -303,6 +347,23 @@ export default function PaymentListPage() {
         onClose={() => {
           setIsModalOpen(false);
           setSelectedPayment(null);
+        }}
+        onPaymentChanged={() => loadPayments()}
+      />
+
+      {/* EDIT PAYMENT MODAL */}
+      <EditPaymentModal
+        isOpen={isEditModalOpen}
+        isDark={isDarkMode}
+        payment={editingPayment}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingPayment(null);
+        }}
+        onSuccess={() => {
+          setIsEditModalOpen(false);
+          setEditingPayment(null);
+          loadPayments();
         }}
       />
     </div>
