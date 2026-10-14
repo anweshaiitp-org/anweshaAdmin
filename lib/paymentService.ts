@@ -1,4 +1,4 @@
-import type { PaymentAnalyticsResponse, PaymentListResponse, PaymentDetailResponse } from '@/types/payment';
+import type { PaymentAnalyticsResponse, PaymentListResponse, PaymentDetailResponse, AdminUpdatePaymentPayload } from '@/types/payment';
 
 // Assumes you have created Next.js App Router API routes that call your Lambda/Backend
 export const fetchPaymentAnalytics = async (): Promise<PaymentAnalyticsResponse> => {
@@ -35,5 +35,39 @@ export const fetchPaymentDetails = async (paymentId: string): Promise<PaymentDet
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData?.message || 'Failed to fetch payment details');
   }
+  return res.json();
+};
+
+export const adminUpdatePayment = async (
+  paymentId: string,
+  payload: AdminUpdatePaymentPayload
+): Promise<{ success: boolean; message: string; payment?: any }> => {
+  const res = await fetch(`/api/admin/payment/${encodeURIComponent(paymentId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.message || `Failed to update payment (${res.status})`);
+  }
+
+  return res.json();
+};
+
+export const adminDeletePayment = async (
+  paymentId: string
+): Promise<{ success: boolean; message: string; deleted_payment_id?: string }> => {
+  const res = await fetch(`/api/admin/payment/${encodeURIComponent(paymentId)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.message || `Failed to delete payment (${res.status})`);
+  }
+
   return res.json();
 };

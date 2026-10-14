@@ -4,8 +4,11 @@ import type {
   GlobalRegistrationsResponse,
   EventRegistrationsResponse,
   TeamDetailsResponse,
+  ExportRegistrationsResponse,
   ExitAttendeeResponse,
   ExitAllResponse,
+  AdminEditRegistrationPayload,
+  AdminDeleteRegistrationPayload,
 } from '@/types/registration';
 
 const BASE = '/api/admin/registration';
@@ -169,6 +172,45 @@ export async function fetchTeamDetails(
   return data as TeamDetailsResponse;
 }
 
+/**
+  * Fetch enriched successful event registrations for document dossier export (DOCX/PDF).
+  * Includes participant details and presigned S3 ID card URLs.
+  */
+export async function fetchEventRegistrationsExport(
+  eventId: string,
+  accommodation: 'all' | 'with' | 'without' = 'all'
+): Promise<ExportRegistrationsResponse> {
+  if (!eventId) {
+    throw new Error('Event ID is required');
+  }
+
+  const params = new URLSearchParams({
+    accommodation,
+  });
+
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(eventId)}/export?${params.toString()}`,
+    {
+      cache: 'no-store',
+    }
+  );
+
+  if (!res.ok) {
+    const message = await getErrorMessage(
+      res,
+      `Failed to load export data for event (${res.status})`
+    );
+    throw new Error(message);
+  }
+
+  const data = await res.json();
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid export response received from server');
+  }
+
+  return data as ExportRegistrationsResponse;
+}
+
 export async function exitAttendee(
   userId: string,
   eventId: string
@@ -205,6 +247,40 @@ export async function exitEveryoneInside(
       res,
       `Failed to exit attendees (${res.status})`
     );
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
+export async function adminEditRegistration(
+  payload: AdminEditRegistrationPayload
+): Promise<{ success: boolean; message: string; data?: any }> {
+  const res = await fetch(BASE, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const message = await getErrorMessage(res, `Failed to edit registration (${res.status})`);
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
+export async function adminDeleteRegistration(
+  payload: AdminDeleteRegistrationPayload
+): Promise<{ success: boolean; message: string; members_deleted?: number }> {
+  const res = await fetch(BASE, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const message = await getErrorMessage(res, `Failed to delete registration (${res.status})`);
     throw new Error(message);
   }
 

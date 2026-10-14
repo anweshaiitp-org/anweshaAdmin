@@ -3,7 +3,8 @@
 import React from 'react';
 import {
     FiUser, FiPhone, FiBookOpen, FiCalendar, FiInstagram, FiMapPin,
-    FiShield, FiKey, FiFileText, FiCheckCircle, FiLock, FiEdit3, FiSave, FiLoader, FiActivity
+    FiShield, FiKey, FiFileText, FiCheckCircle, FiLock, FiEdit3, FiSave, FiLoader, FiActivity,
+    FiLogIn, FiLogOut
 } from 'react-icons/fi';
 import { SectionCard, SectionHeader, DetailRow, InputRow } from './SharedUI';
 
@@ -52,6 +53,34 @@ export default function PersonalInfoSection({
                         <DetailRow isDark={isDark} icon={FiInstagram} label="Instagram Handle" value={profile.instagram_id ? `@${profile.instagram_id}` : null} />
                         <DetailRow isDark={isDark} icon={FiMapPin} label="Accommodation" value={profile.accomadation_selected ? 'Requested' : 'Not Required'} />
                         <DetailRow isDark={isDark} icon={FiShield} label="Email Verified" value={profile.is_email_verified ? 'Yes' : 'No'} />
+                        <DetailRow 
+                            isDark={isDark} 
+                            icon={profile.mainGate_status === 'INSIDE' ? FiLogIn : FiLogOut} 
+                            label="Main Gate Status" 
+                            value={
+                                profile.mainGate_status ? (
+                                    <span className="flex flex-wrap items-center gap-2">
+                                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                                            profile.mainGate_status === 'INSIDE' 
+                                                ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
+                                                : 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
+                                        }`}>
+                                            {profile.mainGate_status}
+                                        </span>
+                                        {profile.mainGate_status === 'INSIDE' && profile.mainGate_entryTime && (
+                                            <span className="text-xs opacity-75">
+                                                (Entered: {new Date(profile.mainGate_entryTime).toLocaleString()})
+                                            </span>
+                                        )}
+                                        {profile.mainGate_status === 'OUTSIDE' && profile.mainGate_exitTime && (
+                                            <span className="text-xs opacity-75">
+                                                (Exited: {new Date(profile.mainGate_exitTime).toLocaleString()})
+                                            </span>
+                                        )}
+                                    </span>
+                                ) : 'Not Scanned'
+                            } 
+                        />
                         <DetailRow isDark={isDark} icon={FiKey} label="Secret Key" value={profile.secret || 'Not Configured'} />
                         <DetailRow isDark={isDark} icon={FiFileText} label="Digital Signature" value={profile.signature || 'Not Configured'} />
                     </div>

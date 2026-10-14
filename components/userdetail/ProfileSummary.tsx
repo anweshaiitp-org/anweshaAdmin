@@ -83,6 +83,23 @@ export default function ProfileSummary({
                     }`}>
                         <FiUser size={12} /> {profile?.user_type || 'STUDENT'}
                     </span>
+                    {/* Main Gate Status Badge */}
+                    <span className={`px-3.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest flex items-center gap-1.5 border ${
+                        profile?.mainGate_status === 'INSIDE'
+                            ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30'
+                            : profile?.mainGate_status === 'OUTSIDE'
+                            ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30'
+                            : isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'
+                    }`}>
+                        <span className={`w-2 h-2 rounded-full ${
+                            profile?.mainGate_status === 'INSIDE'
+                                ? 'bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.5)] animate-pulse'
+                                : profile?.mainGate_status === 'OUTSIDE'
+                                ? 'bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.5)]'
+                                : 'bg-slate-400'
+                        }`} />
+                        Main Gate: {profile?.mainGate_status || 'NOT SCANNED'}
+                    </span>
                 </div>
             </div>
 
