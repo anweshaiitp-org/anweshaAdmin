@@ -99,3 +99,19 @@ export interface PaymentListResponse {
   next_cursor: string | null;
   payments: PaymentRecord[];
 }
+
+export interface AdminUpdatePaymentPayload {
+  payment_status?: PaymentStatus;
+  amount?: number;
+  amount_paid?: number;
+  domain?: PaymentPurpose;
+  event_id?: string;
+  team_id?: string;
+  merch_txn_id?: string;
+  atom_txn_id?: string;
+  bank_txn_id?: string;
+  payment_mode?: string;
+  bank_name?: string;
+  failure_reason?: string;
+  sync_registration?: boolean;
+}

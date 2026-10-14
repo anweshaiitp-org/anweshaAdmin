@@ -7,6 +7,8 @@ import type {
   ExportRegistrationsResponse,
   ExitAttendeeResponse,
   ExitAllResponse,
+  AdminEditRegistrationPayload,
+  AdminDeleteRegistrationPayload,
 } from '@/types/registration';
 
 const BASE = '/api/admin/registration';
@@ -245,6 +247,40 @@ export async function exitEveryoneInside(
       res,
       `Failed to exit attendees (${res.status})`
     );
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
+export async function adminEditRegistration(
+  payload: AdminEditRegistrationPayload
+): Promise<{ success: boolean; message: string; data?: any }> {
+  const res = await fetch(BASE, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const message = await getErrorMessage(res, `Failed to edit registration (${res.status})`);
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
+export async function adminDeleteRegistration(
+  payload: AdminDeleteRegistrationPayload
+): Promise<{ success: boolean; message: string; members_deleted?: number }> {
+  const res = await fetch(BASE, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const message = await getErrorMessage(res, `Failed to delete registration (${res.status})`);
     throw new Error(message);
   }
 

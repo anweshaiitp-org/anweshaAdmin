@@ -2,30 +2,38 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
     FiArrowLeft,
     FiCheckCircle,
     FiClock,
     FiXCircle,
     FiUsers,
+    FiEdit2,
+    FiTrash2,
 } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 
 import { useAuth } from '@/context/AuthContext';
 import {
     fetchTeamDetails,
+    adminDeleteRegistration,
 } from '@/lib/registrationService';
-
 
 import ErrorState from '@/components/events/ErrorState';
 import { TeamDetailsResponse } from '@/types/registration';
 import { TableSkeleton } from '@/components/events/EventLoadingSkeleton';
+import EditRegistrationModal from '@/components/registration/EditRegistrationModal';
 
 export default function TeamDetailsPage() {
-    const { isDarkMode } = useAuth();
+    const { isDarkMode, user } = useAuth();
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
     const params = useParams();
+    const router = useRouter();
 
     const teamId = params.teamId as string;
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     const [data, setData] =
         useState<TeamDetailsResponse | null>(null);
@@ -60,6 +68,24 @@ export default function TeamDetailsPage() {
             loadTeam();
         }
     }, [teamId]);
+
+    const handleDeleteTeam = async () => {
+        if (!data?.team) return;
+        const currentTeam = data.team;
+        if (!window.confirm(`Are you sure you want to delete team "${currentTeam.team_name}" and all its members? This action cannot be undone.`)) {
+            return;
+        }
+
+        setDeleting(true);
+        try {
+            const res = await adminDeleteRegistration({ type: 'team', team_id: currentTeam.team_id });
+            toast.success(res.message || 'Team deleted successfully');
+            router.push('/admin/registration/events?view=eventwise');
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to delete team');
+            setDeleting(false);
+        }
+    };
 
     const PaymentBadge = ({
         status,
@@ -170,9 +196,30 @@ export default function TeamDetailsPage() {
 
                 </div>
 
-                <PaymentBadge
-                    status={team.payment_status}
-                />
+                <div className="flex items-center gap-3">
+                    <PaymentBadge
+                        status={team.payment_status}
+                    />
+
+                    {isSuperAdmin && (
+                        <>
+                            <button
+                                onClick={() => setIsEditOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow transition-all"
+                            >
+                                <FiEdit2 size={13} /> Edit Team
+                            </button>
+
+                            <button
+                                onClick={handleDeleteTeam}
+                                disabled={deleting}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow transition-all disabled:opacity-50"
+                            >
+                                <FiTrash2 size={13} /> {deleting ? 'Deleting...' : 'Delete Team'}
+                            </button>
+                        </>
+                    )}
+                </div>
 
             </div>
 
@@ -457,6 +504,21 @@ export default function TeamDetailsPage() {
                 </div>
 
             </div>
+
+            {/* EDIT TEAM MODAL */}
+            <EditRegistrationModal
+                isOpen={isEditOpen}
+                isDark={isDarkMode}
+                registration={team ? {
+                    ...team,
+                    registration_type: 'team',
+                } : null}
+                onClose={() => setIsEditOpen(false)}
+                onSuccess={() => {
+                    setIsEditOpen(false);
+                    loadTeam();
+                }}
+            />
 
         </div>
     );
