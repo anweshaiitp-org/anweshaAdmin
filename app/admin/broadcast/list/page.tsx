@@ -11,9 +11,19 @@ interface Broadcast {
   audience: string;
   target_count: number;
   created_at: string;
-  status: "DRAFT" | "SENT";
+  status: "DRAFT" | "SENDING" | "SENT" | "PARTIAL" | "FAILED";
   sent_by: string;
+  sent_count?: number;
+  failed_count?: number;
 }
+
+const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
+  DRAFT: { label: "Draft", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  SENDING: { label: "Sending…", cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  SENT: { label: "Sent", cls: "bg-green-50 text-green-700 border-green-200" },
+  PARTIAL: { label: "Partly sent", cls: "bg-orange-50 text-orange-700 border-orange-200" },
+  FAILED: { label: "Failed", cls: "bg-red-50 text-red-700 border-red-200" },
+};
 
 export default function BroadcastListPage() {
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
@@ -128,23 +138,20 @@ export default function BroadcastListPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 font-medium">
-                      {item.target_count || 0} users
+                      {item.status === "DRAFT"
+                        ? "—"
+                        : item.sent_count !== undefined
+                          ? `${item.sent_count}/${item.target_count || 0} queued${item.failed_count ? ` · ${item.failed_count} failed` : ""}`
+                          : `${item.target_count || 0} users`}
                     </td>
                     <td className="px-6 py-4">
-                      {item.status === "DRAFT" ? (
-                        <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full text-xs font-medium">
-                          <FileEdit size={12} />
-                          Draft
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full text-xs font-medium">
-                          <Send size={12} />
-                          Sent
-                        </span>
-                      )}
+                      <span className={`inline-flex items-center gap-1 border px-2.5 py-1 rounded-full text-xs font-medium ${(STATUS_STYLES[item.status] || STATUS_STYLES.SENT).cls}`}>
+                        {item.status === "DRAFT" ? <FileEdit size={12} /> : <Send size={12} />}
+                        {(STATUS_STYLES[item.status] || STATUS_STYLES.SENT).label}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-gray-500 text-xs">
-                      {new Date(item.created_at).toLocaleString()}
+                      {new Date(item.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link

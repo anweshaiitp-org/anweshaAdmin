@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 const BACKEND_URL = process.env.BACKEND_URL;
 
 // GET: Fetch Single Broadcast
+export const maxDuration = 60;
+
 export async function GET(
   req: NextRequest, 
   { params }: { params: Promise<{ broadcastId: string }> }
@@ -18,7 +20,7 @@ export async function GET(
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     return NextResponse.json({ success: false, message: "Failed to fetch broadcast" }, { status: 500 });
@@ -47,7 +49,7 @@ export async function PUT(
       body: JSON.stringify(body)
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     return NextResponse.json({ success: false, message: "Failed to update broadcast" }, { status: 500 });

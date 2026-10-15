@@ -6,6 +6,8 @@ import { auth } from '@/auth';
 const BACKEND_URL = process.env.BACKEND_URL; 
 
 // GET: Fetch Paginated Broadcast List
+export const maxDuration = 60;
+
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
@@ -23,7 +25,7 @@ export async function GET(req: NextRequest) {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     return NextResponse.json({ success: false, message: "Failed to fetch broadcasts" }, { status: 500 });
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
 
     // 3. Handle backend errors gracefully
     if (!response.ok) {

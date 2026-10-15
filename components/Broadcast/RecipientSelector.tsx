@@ -22,6 +22,7 @@ export function RecipientSelector({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchDone, setSearchDone] = useState(false);
 
   // Fetch events when EVENT_SPECIFIC is chosen
   useEffect(() => {
@@ -29,15 +30,14 @@ export function RecipientSelector({
       fetch("/api/admin/events") // Your public events endpoint
         .then(res => res.json())
         .then(data => {
-          if (data.events) {
-            const rawEvents = data.events;
-            const uniqueEventsMap = new Map();
-            rawEvents.forEach((ev: any) => {
-              if (!uniqueEventsMap.has(ev.name)) {
-                uniqueEventsMap.set(ev.name, ev);
-              }
+          const list = Array.isArray(data) ? data : data.events || data.data || [];
+          if (Array.isArray(list)) {
+            const uniqueEvents = new Map<string, any>();
+            list.forEach((ev: any) => {
+              const id = ev.id || ev._id;
+              if (id && !uniqueEvents.has(id)) uniqueEvents.set(id, { ...ev, id });
             });
-            setEvents(Array.from(uniqueEventsMap.values()));
+            setEvents(Array.from(uniqueEvents.values()));
           }
         })
         .catch(() => toast.error("Failed to load events"));
@@ -46,29 +46,37 @@ export function RecipientSelector({
 
   // Search users by email or Anwesha ID
   useEffect(() => {
+    let cancelled = false;
+    const query = searchQuery.trim();
+    setSearchDone(false);
     const delayDebounce = setTimeout(async () => {
-      if (!searchQuery.trim()) {
+      if (query.length < 2) {
         setSearchResults([]);
         return;
       }
       setIsSearching(true);
       try {
-        // Assuming search is anweshaId if it starts with ANW, else email
-        const queryParam = searchQuery.toUpperCase().startsWith("ANW") 
-          ? `anweshaId=${searchQuery.toUpperCase()}` 
-          : `email=${searchQuery}`;
-          
-        const res = await fetch(`/api/admin/users?${queryParam}`);
+        const res = await fetch(`/api/admin/users?search=${encodeURIComponent(query)}&limit=10`);
         const data = await res.json();
-        if (data.success && data.data) setSearchResults(data.data);
-      } catch (err) {
-        console.error("Search failed");
+        if (!cancelled) {
+          setSearchResults(data.success && Array.isArray(data.data) ? data.data.slice(0, 10) : []);
+          setSearchDone(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setSearchResults([]);
+          setSearchDone(true);
+          toast.error("User search failed");
+        }
       } finally {
-        setIsSearching(false);
+        if (!cancelled) setIsSearching(false);
       }
-    }, 500); // 500ms debounce
+    }, 400);
 
-    return () => clearTimeout(delayDebounce);
+    return () => {
+      cancelled = true;
+      clearTimeout(delayDebounce);
+    };
   }, [searchQuery]);
 
   const addUser = (user: any) => {
@@ -120,7 +128,9 @@ export function RecipientSelector({
               >
                 <option value="">Select an Event...</option>
                 {events.map(ev => (
-                  <option key={ev.id} value={ev.id}>{ev.name}</option>
+                  <option key={ev.id} value={ev.id}>
+                    {ev.name}{ev.start_time ? ` · ${new Date(ev.start_time).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" })}` : ""}
+                  </option>
                 ))}
               </select>
             </div>
@@ -136,8 +146,12 @@ export function RecipientSelector({
               >
                 <option value="">Select Role...</option>
                 <option value="USER">User</option>
-                <option value="CAMPUS_AMBASSADOR">Campus Ambassador</option>
                 <option value="VOLUNTEER">Volunteer</option>
+                <option value="MODERATOR">Moderator</option>
+                <option value="JUNIOR_ADMIN">Junior Admin</option>
+                <option value="ACCOMMODATION_ADMIN">Accommodation Admin</option>
+                <option value="ADMIN">Admin</option>
+                <option value="SUPER_ADMIN">Super Admin</option>
               </select>
             </div>
           )}
@@ -155,10 +169,16 @@ export function RecipientSelector({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by Email or Anwesha ID..."
+              placeholder="Search by name, email, phone or Anwesha ID..."
               className="bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-lg w-full pl-10 p-2.5 outline-none"
             />
             
+            {searchDone && !isSearching && searchResults.length === 0 && searchQuery.trim().length >= 2 && (
+              <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500">
+                No users found for "{searchQuery.trim()}"
+              </div>
+            )}
+
             {/* Search Dropdown Results */}
             {searchResults.length > 0 && (
               <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">

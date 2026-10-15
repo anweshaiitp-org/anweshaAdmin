@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { RecipientSelector } from "@/components/Broadcast/RecipientSelector";
 import { EmailEditorContainer } from "@/components/Broadcast/EmailEditorContainer";
+import { BroadcastReviewModal, AUDIENCE_LABELS, sendBroadcastRequest } from "@/components/Broadcast/BroadcastReviewModal";
 import { Send, Loader2, Save, ArrowLeft, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -20,7 +21,10 @@ export default function BroadcastDetailPage({
   const [eventId, setEventId] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
   const [subject, setSubject] = useState("");
-  const [status, setStatus] = useState<"DRAFT" | "SENT">("DRAFT");
+  const [status, setStatus] = useState<string>("DRAFT");
+  const [delivery, setDelivery] = useState<{ sent?: number; failed?: number }>({});
+  const [review, setReview] = useState<{ html: string; design: unknown; count: number } | null>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
   
   const [initialLoading, setInitialLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -50,17 +54,18 @@ export default function BroadcastDetailPage({
           
           // Check if we have unsubmitted local edits for the metadata
           const localMeta = localStorage.getItem(metaKey);
-          if (localMeta) {
-            const parsedMeta = JSON.parse(localMeta);
-            setSubject(parsedMeta.subject || item.subject || "");
-            setAudience(parsedMeta.audience || item.audience || "ALL");
-            // If you save selectedUsers in DB, you would restore them here too
-          } else {
-            setSubject(item.subject || "");
-            setAudience(item.audience || "ALL");
-          }
-          
+          const savedUsers = Array.isArray(item.anwesha_ids)
+            ? item.anwesha_ids.map((id: string) => ({ anwesha_id: id, full_name: id }))
+            : [];
+          const parsedMeta = localMeta ? JSON.parse(localMeta) : {};
+          setSubject(parsedMeta.subject || item.subject || "");
+          setAudience(parsedMeta.audience || item.audience || "ALL");
+          setEventId(parsedMeta.eventId || item.event_id || "");
+          setTargetRole(parsedMeta.targetRole || item.target_role || "");
+          setSelectedUsers(parsedMeta.selectedUsers?.length ? parsedMeta.selectedUsers : savedUsers);
+
           setStatus(item.status || "DRAFT");
+          setDelivery({ sent: item.sent_count, failed: item.failed_count });
 
           // Check if we have unsubmitted local edits for the design
           const localDesign = localStorage.getItem(designKey);
@@ -88,54 +93,90 @@ export default function BroadcastDetailPage({
     fetchDetails();
   }, [broadcastId, designKey, metaKey]);
 
-  // 3. Handle Save Draft or Resend/Send Update
-  const handleUpdate = async (isDraft: boolean) => {
+  const exportEmail = () =>
+    new Promise<{ html: string; design: unknown }>((resolve) => {
+      editorRef.current.editor.exportHtml((data: any) => resolve({ html: data.html, design: data.design }));
+    });
+
+  const buildPayload = (exported: { html: string; design: unknown }, extra: Record<string, unknown>) => ({
+    subject,
+    audience,
+    htmlContent: exported.html,
+    unlayerDesign: exported.design,
+    ...(audience === "SPECIFIC" && { anweshaIds: selectedUsers.map((u) => u.anwesha_id) }),
+    ...(audience === "EVENT_SPECIFIC" && { eventId }),
+    ...(audience === "ROLE_BASED" && { targetRole }),
+    ...extra,
+  });
+
+  const finish = () => {
+    localStorage.removeItem(metaKey);
+    localStorage.removeItem(designKey);
+    router.push("/admin/broadcast/list");
+  };
+
+  const saveDraft = async () => {
     if (!subject.trim()) return toast.error("Please enter an email subject");
     if (!editorRef.current) return toast.error("Email editor not ready");
-
-    if (isDraft) setIsSavingDraft(true);
-    else setIsSending(true);
-
-    editorRef.current.editor.exportHtml(async (data: any) => {
-      const { design, html } = data;
-
-      const payload = {
-        subject,
-        audience,
-        htmlContent: html,
-        unlayerDesign: design,
-        isDraft,
-        ...(audience === "SPECIFIC" && { anweshaIds: selectedUsers.map((u) => u.anwesha_id) }),
-        ...(audience === "EVENT_SPECIFIC" && { eventId }),
-        ...(audience === "ROLE_BASED" && { targetRole })
-      };
-
-      try {
-        const response = await fetch(`/api/admin/broadcast/${broadcastId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const resData = await response.json();
-        if (!response.ok) throw new Error(resData.message || "Failed to update");
-
-        toast.success(resData.message || (isDraft ? "Draft updated!" : "Broadcast sent!"));
-        setStatus(isDraft ? "DRAFT" : "SENT");
-        
-        // CLEAR SPECIFIC LOCAL STORAGE ON SUCCESS
-        localStorage.removeItem(metaKey);
-        localStorage.removeItem(designKey);
-        
-        router.push("/admin/broadcast/list");
-      } catch (error: any) {
-        toast.error(error.message);
-      } finally {
-        setIsSavingDraft(false);
-        setIsSending(false);
-      }
-    });
+    setIsSavingDraft(true);
+    try {
+      const result = await sendBroadcastRequest(`/api/admin/broadcast/${broadcastId}`, "PUT", buildPayload(await exportEmail(), { isDraft: true }));
+      toast.success(result.message || "Draft updated!");
+      finish();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
+
+  const openReview = async () => {
+    if (!subject.trim()) return toast.error("Please enter an email subject");
+    if (!editorRef.current) return toast.error("Email editor not ready");
+    if (audience === "SPECIFIC" && selectedUsers.length === 0) return toast.error("Select at least one user");
+    if (audience === "EVENT_SPECIFIC" && !eventId) return toast.error("Select an Event");
+    if (audience === "ROLE_BASED" && !targetRole) return toast.error("Select a Role");
+    setIsPreparing(true);
+    try {
+      const exported = await exportEmail();
+      const preview = await sendBroadcastRequest(`/api/admin/broadcast/${broadcastId}`, "PUT", buildPayload(exported, { dryRun: true }));
+      setReview({ ...exported, count: preview.recipient_count ?? 0 });
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsPreparing(false);
+    }
+  };
+
+  const confirmSend = async () => {
+    if (!review) return;
+    setIsSending(true);
+    try {
+      const result = await sendBroadcastRequest(`/api/admin/broadcast/${broadcastId}`, "PUT", buildPayload(review, {}));
+      toast.success(result.message);
+      setReview(null);
+      finish();
+    } catch (error: any) {
+      toast.error(error.message, { duration: 8000 });
+      if (error.inBackground) {
+        setReview(null);
+        setStatus("SENDING");
+      }
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
+    DRAFT: { label: "Draft", cls: "bg-amber-100 text-amber-700" },
+    SENDING: { label: "Sending…", cls: "bg-blue-100 text-blue-700" },
+    SENT: { label: "Sent", cls: "bg-green-100 text-green-700" },
+    PARTIAL: { label: "Partly sent", cls: "bg-orange-100 text-orange-700" },
+    FAILED: { label: "Failed", cls: "bg-red-100 text-red-700" },
+  };
+  const badge = STATUS_BADGES[status] || STATUS_BADGES.SENT;
+  const isDraft = status === "DRAFT";
+  const busy = isSending || isSavingDraft || isPreparing;
 
   if (initialLoading) {
     return (
@@ -160,28 +201,25 @@ export default function BroadcastDetailPage({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-gray-900">
-                {status === "SENT" ? "View Broadcast" : "Edit Draft Broadcast"}
+                {isDraft ? "Edit Draft Broadcast" : "View Broadcast"}
               </h1>
-              {status === "SENT" ? (
-                <span className="bg-green-100 text-green-700 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                  <CheckCircle2 size={12} /> Sent
-                </span>
-              ) : (
-                <span className="bg-amber-100 text-amber-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">
-                  Draft
-                </span>
-              )}
+              <span className={`${badge.cls} text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1`}>
+                {status === "SENT" && <CheckCircle2 size={12} />} {badge.label}
+              </span>
             </div>
-            <p className="text-xs text-gray-500">ID: {broadcastId}</p>
+            <p className="text-xs text-gray-500">
+              ID: {broadcastId}
+              {!isDraft && delivery.sent !== undefined && ` · ${delivery.sent} queued${delivery.failed ? `, ${delivery.failed} failed` : ""}`}
+            </p>
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          {status === "DRAFT" && (
+          {isDraft && (
             <button
-              onClick={() => handleUpdate(true)}
-              disabled={isSending || isSavingDraft}
+              onClick={saveDraft}
+              disabled={busy}
               className="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-70"
             >
               {isSavingDraft ? <Loader2 size={18} className="animate-spin text-gray-500" /> : <Save size={18} className="text-gray-500" />}
@@ -190,12 +228,13 @@ export default function BroadcastDetailPage({
           )}
 
           <button
-            onClick={() => handleUpdate(false)}
-            disabled={isSending || isSavingDraft}
+            onClick={openReview}
+            disabled={busy || status === "SENDING"}
+            title={status === "SENDING" ? "This broadcast is still being sent" : undefined}
             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-70"
           >
-            {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-            <span>{status === "SENT" ? "Resend Broadcast" : "Review & Send"}</span>
+            {isPreparing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            <span>{isPreparing ? "Counting recipients…" : isDraft ? "Review & Send" : "Resend Broadcast"}</span>
           </button>
         </div>
       </div>
@@ -228,6 +267,18 @@ export default function BroadcastDetailPage({
       <div className="h-[700px] border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <EmailEditorContainer editorRef={editorRef} draftId={broadcastId} />
       </div>
+
+      {review && (
+        <BroadcastReviewModal
+          subject={subject}
+          audienceLabel={AUDIENCE_LABELS[audience] || audience}
+          recipientCount={review.count}
+          isSending={isSending}
+          resend={!isDraft}
+          onCancel={() => setReview(null)}
+          onConfirm={confirmSend}
+        />
+      )}
     </div>
   );
 }
