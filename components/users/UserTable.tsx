@@ -136,7 +136,7 @@ export default function UserTable({
 
               <td className="p-4">
                 <span className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                  {user.college_name || '-'}
+                  {user.college_name || user.collage_name || '-'}
                 </span>
               </td>
 

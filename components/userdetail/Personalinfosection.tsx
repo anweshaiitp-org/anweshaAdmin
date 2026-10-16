@@ -47,7 +47,7 @@ export default function PersonalInfoSection({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fadeIn">
                         <DetailRow isDark={isDark} icon={FiUser} label="Full Name" value={profile.full_name} />
                         <DetailRow isDark={isDark} icon={FiPhone} label="Phone Number" value={profile.phone_number} />
-                        <DetailRow isDark={isDark} icon={FiBookOpen} label="College Name" value={profile.collage_name} />
+                        <DetailRow isDark={isDark} icon={FiBookOpen} label="College Name" value={profile.college_name || profile.collage_name || profile.college} />
                         <DetailRow isDark={isDark} icon={FiUser} label="Gender" value={profile.gender} />
                         <DetailRow isDark={isDark} icon={FiCalendar} label="Date of Birth" value={profile.dob} />
                         <DetailRow isDark={isDark} icon={FiInstagram} label="Instagram Handle" value={profile.instagram_id ? `@${profile.instagram_id}` : null} />
@@ -94,7 +94,8 @@ export default function PersonalInfoSection({
                                 value={formData.phone_number || ''} onChange={(e: any) => setFormData({ ...formData, phone_number: e.target.value })} />
 
                             <InputRow isDark={isDark} icon={FiBookOpen} label="College Name" type="text" disabled={saving}
-                                value={formData.collage_name || ''} onChange={(e: any) => setFormData({ ...formData, collage_name: e.target.value })} />
+                                value={formData.college_name || formData.collage_name || ''}
+                                onChange={(e: any) => setFormData({ ...formData, college_name: e.target.value, collage_name: e.target.value })} />
 
                             <InputRow isDark={isDark} icon={FiUser} label="Gender" type="select" disabled={saving}
                                 value={formData.gender || ''} onChange={(e: any) => setFormData({ ...formData, gender: e.target.value })}>

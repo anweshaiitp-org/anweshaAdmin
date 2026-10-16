@@ -5,6 +5,7 @@ export interface User {
   full_name: string;
   phone_number?: string;
   college_name?: string;
+  collage_name?: string;
   gender?: string;
   user_type: string; // e.g., 'STUDENT', 'PROFESSIONAL'
   role: string; // e.g., 'USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN'

@@ -91,6 +91,15 @@ export async function GET(
             );
             if (fallbackRes.ok) {
               const fallbackData = await fallbackRes.json();
+              if (fallbackData?.success && fallbackData?.data?.profile) {
+                const college =
+                  fallbackData.data.profile.college_name ||
+                  fallbackData.data.profile.collage_name ||
+                  fallbackData.data.profile.college ||
+                  '';
+                fallbackData.data.profile.college_name = college;
+                fallbackData.data.profile.collage_name = college;
+              }
               return NextResponse.json(fallbackData, { status: fallbackRes.status });
             }
           }
@@ -98,6 +107,16 @@ export async function GET(
       } catch (searchErr) {
         console.error('Fallback search error:', searchErr);
       }
+    }
+
+    if (data?.success && data?.data?.profile) {
+      const college =
+        data.data.profile.college_name ||
+        data.data.profile.collage_name ||
+        data.data.profile.college ||
+        '';
+      data.data.profile.college_name = college;
+      data.data.profile.collage_name = college;
     }
 
     return NextResponse.json(data, {
@@ -120,7 +139,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ user
   const session = await auth();
   const token = (session as any)?.accessToken;
   const { userId } = await params;
-  const body = await req.text();
+  let bodyJson: any = {};
+  try {
+    bodyJson = await req.json();
+  } catch {
+    bodyJson = {};
+  }
+
+  const college = bodyJson.college_name || bodyJson.collage_name;
+  if (college) {
+    bodyJson.college_name = college;
+    bodyJson.collage_name = college;
+  }
 
   try {
     const res = await fetch(`${BACKEND_URL}/admin/users/${encodeURIComponent(userId)}`, {
@@ -129,7 +159,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ user
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body
+      body: JSON.stringify(bodyJson)
     });
 
     if (!res.ok) {

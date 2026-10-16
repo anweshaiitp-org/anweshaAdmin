@@ -24,10 +24,15 @@ export async function GET(req: NextRequest) {
     // Map backend response structure to the frontend's expected UserListResponse
     const formattedData = {
       success: backendData.success,
-      users: (backendData.data || []).map((u: any) => ({
-        ...u,
-        id: u.user_id
-      })),
+      users: (backendData.data || []).map((u: any) => {
+        const college = u.college_name || u.collage_name || u.college || '';
+        return {
+          ...u,
+          id: u.user_id,
+          college_name: college,
+          collage_name: college,
+        };
+      }),
       pagination: {
         limit: parseInt(req.nextUrl.searchParams.get('limit') || '20', 10),
         nextLastKey: backendData.nextKey

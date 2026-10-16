@@ -3,7 +3,7 @@
 import React from 'react';
 import { 
     FiMail, FiShield, FiUser, FiEye, 
-    FiLoader, FiHash, FiPrinter, FiMaximize 
+    FiLoader, FiHash, FiPrinter, FiMaximize, FiBookOpen 
 } from 'react-icons/fi';
 import IdCardStatusBadge from '@/components/common/IdCardStatusBadge';
 
@@ -72,6 +72,18 @@ export default function ProfileSummary({
                         <FiHash size={14} />
                         <span>{profile?.anwesha_id || 'N/A'}</span>
                     </div>
+
+                    {(profile?.college_name || profile?.collage_name || profile?.college) && (
+                        <>
+                            <span className="hidden sm:block opacity-40">•</span>
+                            <div className="flex items-center gap-1.5 text-sm font-medium">
+                                <FiBookOpen size={14} />
+                                <span className="truncate max-w-[200px] sm:max-w-[280px]" title={profile?.college_name || profile?.collage_name || profile?.college}>
+                                    {profile?.college_name || profile?.collage_name || profile?.college}
+                                </span>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Badges */}
