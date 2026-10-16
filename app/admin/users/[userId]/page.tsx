@@ -67,11 +67,17 @@ export default function UserDetailPage() {
         setLoading(true);
         try {
             const res = await fetchUserFullProfile(userId);
-            if (res.success) {
-                setUserData(res.data);
-                setFormData(res.data.profile);
-                if (res.data.profile.profile_photo) {
-                    setPhotoUrl(res.data.profile.profile_photo);
+            if (res.success && res.data?.profile) {
+                const college = res.data.profile.college_name || res.data.profile.collage_name || res.data.profile.college || '';
+                const normalizedProfile = {
+                    ...res.data.profile,
+                    college_name: college,
+                    collage_name: college,
+                };
+                setUserData({ ...res.data, profile: normalizedProfile });
+                setFormData(normalizedProfile);
+                if (normalizedProfile.profile_photo) {
+                    setPhotoUrl(normalizedProfile.profile_photo);
                 }
             } else {
                 throw new Error(res.message);
@@ -99,7 +105,13 @@ export default function UserDetailPage() {
         const toastId = toast.loading('Updating user profile...');
  
         try {
-            const res = await updateUser(userData.profile.user_id, formData);
+            const college = formData.college_name || formData.collage_name || '';
+            const updatePayload = {
+                ...formData,
+                college_name: college,
+                collage_name: college,
+            };
+            const res = await updateUser(userData.profile.user_id, updatePayload);
             if (res.success) {
                 toast.success('User updated successfully!', { id: toastId });
                 await loadUserData();

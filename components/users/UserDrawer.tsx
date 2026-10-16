@@ -76,7 +76,7 @@ export default function UserDrawer({ user, isOpen, onClose, onEdit, onDelete, on
             <div className="flex items-start gap-3">
               <FiMapPin className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
               <div>
-                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{user.college_name || 'N/A'}</p>
+                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{user.college_name || user.collage_name || 'N/A'}</p>
               </div>
             </div>
 
