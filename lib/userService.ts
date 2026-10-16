@@ -532,6 +532,9 @@ export async function submitManualEntry(payload: {
   event_id?: string;
   amount_paid?: number;
   accommodation?: boolean;
+  sendVerificationLink?: boolean;
+  send_verification_link?: boolean;
+  send_document_verification_mail?: boolean;
 } | any[]): Promise<{
   success: boolean;
   message?: string;
@@ -564,6 +567,79 @@ export async function submitManualEntry(payload: {
     throw new Error(data.message || 'Failed to submit manual entry records');
   }
   return data;
+}
+
+// 5. Admin Manual Document Upload & Verification
+export async function getAdminDocumentUploadUrl(
+  userId: string,
+  type: 'college_id' | 'aadhar_id',
+  contentType: string,
+  fileName?: string
+): Promise<{ success: boolean; uploadUrl: string; fileKey: string; message?: string }> {
+  const sp = new URLSearchParams({
+    type,
+    mode: 'upload',
+    contentType,
+    ...(fileName ? { fileName } : {})
+  });
+
+  const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/document?${sp.toString()}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+    cache: 'no-store'
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok || !data.success || !data.uploadUrl) {
+    throw new Error(data.message || 'Failed to get upload URL');
+  }
+
+  return data;
+}
+
+export async function uploadFileToStorage(uploadUrl: string, file: File): Promise<void> {
+  const contentType =
+    file.type ||
+    (/\.png$/i.test(file.name)
+      ? 'image/png'
+      : /\.pdf$/i.test(file.name)
+      ? 'application/pdf'
+      : 'image/jpeg');
+
+  const res = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: file
+  });
+
+  if (!res.ok) {
+    throw new Error(`File upload to storage failed (${res.status}). Please try again.`);
+  }
+}
+
+export async function submitManualUserDocuments(
+  userId: string,
+  data: {
+    college_id_number: string;
+    college_id_file_key: string;
+    aadhar_id_number: string;
+    aadhar_id_file_key: string;
+  }
+): Promise<{ success: boolean; message?: string; data?: any }> {
+  const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/document`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+
+  const resData = await res.json().catch(() => ({}));
+
+  if (!res.ok || !resData.success) {
+    throw new Error(resData.message || 'Failed to submit documents');
+  }
+
+  return resData;
 }
 
 export async function fetchGateAttendees(params: {
