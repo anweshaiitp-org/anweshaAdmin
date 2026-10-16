@@ -12,8 +12,10 @@ import {
     FiRefreshCw,
     FiBookOpen,
     FiCreditCard,
-    FiShield
+    FiShield,
+    FiUploadCloud
 } from 'react-icons/fi';
+import Link from 'next/link';
 import { SectionCard, SectionHeader, StatusBadge } from './SharedUI';
 
 interface DocumentsSectionProps {
@@ -27,6 +29,7 @@ interface DocumentsSectionProps {
     onApprove: () => void;
     onOpenReject: () => void;
     onRequestUpload: () => void;
+    onRefreshUser?: () => void;
 }
 
 export default function DocumentsSection({
@@ -72,7 +75,27 @@ export default function DocumentsSection({
                 title="Identity Documents Verification"
                 isDark={isDark}
                 accent="amber"
-                action={<StatusBadge status={profile.id_card_status} />}
+                action={
+                    <div className="flex items-center gap-2.5">
+                        <StatusBadge status={profile.id_card_status} />
+                        {canVerifyIds && (
+                            <Link
+                                href={`/admin/users/${encodeURIComponent(profile.user_id)}/upload-document`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+                                    isDark
+                                        ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30'
+                                        : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
+                                }`}
+                                title="Open manual document upload page in new tab"
+                            >
+                                <FiUploadCloud size={14} />
+                                <span>Upload Manual</span>
+                            </Link>
+                        )}
+                    </div>
+                }
             />
 
             <div className="p-6 md:p-8 space-y-6">
@@ -292,6 +315,18 @@ export default function DocumentsSection({
                                     >
                                         <FiXCircle size={18} /> Reject & Request Re-upload
                                     </button>
+                                    <Link
+                                        href={`/admin/users/${encodeURIComponent(profile.user_id)}/upload-document`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition-all border ${
+                                            isDark
+                                                ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-sm'
+                                        }`}
+                                    >
+                                        <FiUploadCloud size={16} /> Upload Manual
+                                    </Link>
                                 </div>
                             </div>
                         )}
@@ -305,25 +340,49 @@ export default function DocumentsSection({
                                         Identity Verified — Both College ID and Aadhar ID have been approved.
                                     </p>
                                 </div>
-                                <button
-                                    disabled={processingIdAction}
-                                    onClick={() => setShowRequestAgainModal(true)}
-                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
-                                >
-                                    <FiRefreshCw size={13} /> Re-request Upload
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <Link
+                                        href={`/admin/users/${encodeURIComponent(profile.user_id)}/upload-document`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
+                                    >
+                                        <FiUploadCloud size={13} /> Upload Manual
+                                    </Link>
+                                    <button
+                                        disabled={processingIdAction}
+                                        onClick={() => setShowRequestAgainModal(true)}
+                                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
+                                    >
+                                        <FiRefreshCw size={13} /> Re-request Upload
+                                    </button>
+                                </div>
                             </div>
                         )}
 
                         {/* Not uploaded -> First time request */}
                         {profile.id_card_status === 'NOT_UPLOADED' && (
-                            <button
-                                disabled={processingIdAction}
-                                onClick={onRequestUpload}
-                                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                            >
-                                <FiSend size={18} /> Request ID Upload (College + Aadhar)
-                            </button>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button
+                                    disabled={processingIdAction}
+                                    onClick={onRequestUpload}
+                                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                >
+                                    <FiSend size={18} /> Request ID Upload (College + Aadhar)
+                                </button>
+                                <Link
+                                    href={`/admin/users/${encodeURIComponent(profile.user_id)}/upload-document`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border ${
+                                        isDark
+                                            ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                                            : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-200 shadow-sm'
+                                    }`}
+                                >
+                                    <FiUploadCloud size={18} /> Upload Manual
+                                </Link>
+                            </div>
                         )}
 
                         {/* Not required -> Force Request ID button with confirmation */}
@@ -334,13 +393,27 @@ export default function DocumentsSection({
                                 }`}>
                                     ID Card verification is currently not required for this user.
                                 </div>
-                                <button
-                                    disabled={processingIdAction}
-                                    onClick={() => setShowForceRequestModal(true)}
-                                    className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                                >
-                                    <FiSend size={18} /> Force Request ID Upload
-                                </button>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        disabled={processingIdAction}
+                                        onClick={() => setShowForceRequestModal(true)}
+                                        className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                    >
+                                        <FiSend size={18} /> Force Request ID Upload
+                                    </button>
+                                    <Link
+                                        href={`/admin/users/${encodeURIComponent(profile.user_id)}/upload-document`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border ${
+                                            isDark
+                                                ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                                                : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-200 shadow-sm'
+                                        }`}
+                                    >
+                                        <FiUploadCloud size={18} /> Upload Manual
+                                    </Link>
+                                </div>
                             </div>
                         )}
 
@@ -360,13 +433,27 @@ export default function DocumentsSection({
                                         Documents were rejected. You can generate a new upload link for the user.
                                     </div>
                                 )}
-                                <button
-                                    disabled={processingIdAction}
-                                    onClick={() => setShowRequestAgainModal(true)}
-                                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                                >
-                                    <FiRefreshCw size={17} /> Request Documents Again
-                                </button>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        disabled={processingIdAction}
+                                        onClick={() => setShowRequestAgainModal(true)}
+                                        className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                    >
+                                        <FiRefreshCw size={17} /> Request Documents Again
+                                    </button>
+                                    <Link
+                                        href={`/admin/users/${encodeURIComponent(profile.user_id)}/upload-document`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border ${
+                                            isDark
+                                                ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                                                : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-200 shadow-sm'
+                                        }`}
+                                    >
+                                        <FiUploadCloud size={17} /> Upload Manual
+                                    </Link>
+                                </div>
                             </div>
                         )}
                     </div>

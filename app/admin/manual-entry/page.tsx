@@ -48,6 +48,7 @@ export default function ManualBulkEntryPage() {
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [accommodation, setAccommodation] = useState<boolean>(false);
   const [defaultCollege, setDefaultCollege] = useState<string>('');
+  const [sendVerificationLink, setSendVerificationLink] = useState<boolean>(true);
 
   // Paste Mode State
   const [pastedText, setPastedText] = useState<string>('');
@@ -238,7 +239,8 @@ Rahul Singh\trahul.singh@example.com\t9123456780\t\tBIT Mesra`;
         records,
         event_id: selectedEventId.trim() || undefined,
         amount_paid: amountPaid,
-        accommodation: accommodation
+        accommodation: accommodation,
+        sendVerificationLink: sendVerificationLink
       });
 
       if (response.success || response.results) {
@@ -287,7 +289,8 @@ Rahul Singh\trahul.singh@example.com\t9123456780\t\tBIT Mesra`;
         records: recordsToRetry,
         event_id: selectedEventId.trim() || undefined,
         amount_paid: amountPaid,
-        accommodation: accommodation
+        accommodation: accommodation,
+        sendVerificationLink: sendVerificationLink
       });
 
       const created = response.results?.createdUsers || [];
@@ -403,7 +406,7 @@ Rahul Singh\trahul.singh@example.com\t9123456780\t\tBIT Mesra`;
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Event Selector */}
           <div className="space-y-1.5">
             <label className={`block text-xs font-semibold ${dark ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -465,6 +468,25 @@ Rahul Singh\trahul.singh@example.com\t9123456780\t\tBIT Mesra`;
                   : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:bg-white'
               }`}
             />
+          </div>
+
+          {/* Document Verification Mail Option */}
+          <div className="space-y-1.5">
+            <label className={`block text-xs font-semibold ${dark ? 'text-gray-300' : 'text-gray-700'}`}>
+              Verification Mail
+            </label>
+            <select
+              value={sendVerificationLink ? 'yes' : 'no'}
+              onChange={(e) => setSendVerificationLink(e.target.value === 'yes')}
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium outline-none transition-all ${
+                dark
+                  ? 'bg-gray-800/80 border-gray-700 text-white focus:border-blue-500'
+                  : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-blue-500 focus:bg-white'
+              }`}
+            >
+              <option value="yes">Yes — Send verification mail</option>
+              <option value="no">No — Do not send mail</option>
+            </select>
           </div>
 
           {/* Accommodation Toggle */}
@@ -826,7 +848,9 @@ Rahul Singh\trahul.singh@example.com\t9123456780\t\tBIT Mesra`;
                               ? { label: 'ID verified · in ticket queue', tone: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' }
                               : user.id_card_status === 'UPLOADED'
                                 ? { label: 'ID awaiting review', tone: 'bg-amber-500/10 text-amber-500 border-amber-500/20' }
-                                : { label: 'ID request not sent', tone: 'bg-rose-500/10 text-rose-400 border-rose-500/20' };
+                                : !sendVerificationLink
+                                  ? { label: 'Verification mail skipped', tone: 'bg-gray-500/10 text-gray-400 border-gray-500/20' }
+                                  : { label: 'ID request not sent', tone: 'bg-rose-500/10 text-rose-400 border-rose-500/20' };
                           return (
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${idBadge.tone}`}>
                               {idBadge.label}
