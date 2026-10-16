@@ -4,6 +4,7 @@ export interface UserProfile {
   email_id: string;
   full_name: string;
   phone_number?: string;
+  college_name?: string;
   collage_name?: string;
   gender?: 'MALE' | 'FEMALE' | 'OTHER' | string;
   role: string;
@@ -13,11 +14,13 @@ export interface UserProfile {
   instagram_id?: string;
   facebook_id?: string;
   accomadation_selected?: boolean;
+  accommodation_selected?: boolean;
 }
 
 export interface EditProfilePayload {
   full_name?: string;
   phone_number?: string;
+  college_name?: string;
   collage_name?: string;
   gender?: string;
   dob?: string;
@@ -25,6 +28,7 @@ export interface EditProfilePayload {
   facebook_id?: string;
   profile_photo?: string;
   accomadation_selected?: boolean;
+  accommodation_selected?: boolean;
 }
 
 export interface UploadUrlResponse {

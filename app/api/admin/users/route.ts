@@ -26,11 +26,14 @@ export async function GET(req: NextRequest) {
       success: backendData.success,
       users: (backendData.data || []).map((u: any) => {
         const college = u.college_name || u.collage_name || u.college || '';
+        const acc = Boolean(u.accomadation_selected ?? u.accommodation_selected);
         return {
           ...u,
           id: u.user_id,
           college_name: college,
           collage_name: college,
+          accomadation_selected: acc,
+          accommodation_selected: acc,
         };
       }),
       pagination: {

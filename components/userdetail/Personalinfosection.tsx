@@ -51,7 +51,7 @@ export default function PersonalInfoSection({
                         <DetailRow isDark={isDark} icon={FiUser} label="Gender" value={profile.gender} />
                         <DetailRow isDark={isDark} icon={FiCalendar} label="Date of Birth" value={profile.dob} />
                         <DetailRow isDark={isDark} icon={FiInstagram} label="Instagram Handle" value={profile.instagram_id ? `@${profile.instagram_id}` : null} />
-                        <DetailRow isDark={isDark} icon={FiMapPin} label="Accommodation" value={profile.accomadation_selected ? 'Requested' : 'Not Required'} />
+                        <DetailRow isDark={isDark} icon={FiMapPin} label="Accommodation" value={profile.accomadation_selected || profile.accommodation_selected ? 'Requested' : 'Not Required'} />
                         <DetailRow isDark={isDark} icon={FiShield} label="Email Verified" value={profile.is_email_verified ? 'Yes' : 'No'} />
                         <DetailRow 
                             isDark={isDark} 
@@ -124,6 +124,14 @@ export default function PersonalInfoSection({
 
                             <InputRow isDark={isDark} icon={FiCalendar} label="Date of Birth" type="date" disabled={saving}
                                 value={formData.dob || ''} onChange={(e: any) => setFormData({ ...formData, dob: e.target.value })} />
+
+                            <InputRow isDark={isDark} icon={FiMapPin} label="Accommodation Requested" type="checkbox" disabled={saving}
+                                checked={Boolean(formData.accomadation_selected ?? formData.accommodation_selected)} 
+                                onChange={(e: any) => setFormData({ 
+                                    ...formData, 
+                                    accomadation_selected: e.target.checked,
+                                    accommodation_selected: e.target.checked 
+                                })} />
 
                             <InputRow isDark={isDark} icon={FiCheckCircle} label="Email Verified" type="checkbox" disabled={saving}
                                 checked={!!formData.is_email_verified} onChange={(e: any) => setFormData({ ...formData, is_email_verified: e.target.checked })} />
