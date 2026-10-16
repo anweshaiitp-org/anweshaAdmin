@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fi';
 import PaymentDetailsModal from '@/components/payment/PaymentDetailsModal';
 import ExportDropdown from '@/components/common/ExportDropdown';
+import IdCardStatusBadge from '@/components/common/IdCardStatusBadge';
 import {
   exportAllUsers,
   exportAllRegistrations,
@@ -515,13 +516,28 @@ export default function IntegratedAdminDashboard() {
             <ul className="space-y-3">
               {recentRegistrations.map((reg, idx) => {
                 const paid = ['SUCCESS', 'PAID'].includes((reg.payment_status || '').toUpperCase());
+                const profileHref =
+                  reg.registration_type === 'team'
+                    ? `/admin/registration/team/${encodeURIComponent(reg.team_id || '')}`
+                    : `/admin/users/${encodeURIComponent(reg.user_id || reg.anwesha_id || '')}`;
+
                 return (
                   <li key={reg.registration_id || reg.team_id || idx} className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-colors ${t.inner}`}>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 min-w-0">
-                        <p className={`text-sm font-semibold truncate ${t.title}`}>
-                          {reg.registration_type === 'team' ? reg.team_name : reg.full_name}
-                        </p>
+                        {profileHref ? (
+                          <Link
+                            href={profileHref}
+                            className={`text-sm font-semibold truncate hover:underline hover:text-blue-500 transition-colors ${t.title}`}
+                            title="Open detailed profile"
+                          >
+                            {reg.registration_type === 'team' ? reg.team_name : reg.full_name}
+                          </Link>
+                        ) : (
+                          <p className={`text-sm font-semibold truncate ${t.title}`}>
+                            {reg.registration_type === 'team' ? reg.team_name : reg.full_name}
+                          </p>
+                        )}
                         {reg.is_special && (
                           <span className="shrink-0 max-w-[40%] truncate px-1.5 py-0.5 text-[10px] font-semibold rounded bg-blue-500/10 text-blue-500 border border-blue-500/30">
                             {reg.special_event_type || 'Pass'}
@@ -532,11 +548,16 @@ export default function IntegratedAdminDashboard() {
                         <span className="font-medium">{reg.event_name}</span> · {reg.registration_type}
                       </p>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded-md uppercase border ${paid ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
-                        {reg.payment_status || 'Pending'}
-                      </span>
-                      <p className={`text-[11px] mt-1 tabular-nums ${t.faint}`}>
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-1.5">
+                        {reg.registration_type === 'solo' && (
+                          <IdCardStatusBadge status={reg.id_card_status} size="xs" />
+                        )}
+                        <span className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded-md uppercase border ${paid ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+                          {reg.payment_status || 'Pending'}
+                        </span>
+                      </div>
+                      <p className={`text-[11px] tabular-nums ${t.faint}`}>
                         {reg.date_of_registration ? new Date(reg.date_of_registration).toLocaleDateString() : '—'}
                       </p>
                     </div>
@@ -567,36 +588,53 @@ export default function IntegratedAdminDashboard() {
             <p className={`text-xs py-8 text-center ${t.faint}`}>No transactions yet.</p>
           ) : (
             <ul className="space-y-3">
-              {recentPayments.map((pmt) => (
-                <li 
-                  key={pmt.paymentId} 
-                  onClick={() => {
-                    setSelectedPayment(pmt);
-                    setIsPaymentModalOpen(true);
-                  }}
-                  className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-colors cursor-pointer group ${t.inner}`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <DomainBadge domain={pmt.domain} />
-                      <span className={`text-sm font-semibold truncate group-hover:underline ${t.title}`}>
-                        {pmt.full_name || pmt.anwesha_id || pmt.paymentId}
-                      </span>
+              {recentPayments.map((pmt) => {
+                const userTarget = pmt.user_id || pmt.anwesha_id;
+                return (
+                  <li 
+                    key={pmt.paymentId} 
+                    onClick={() => {
+                      setSelectedPayment(pmt);
+                      setIsPaymentModalOpen(true);
+                    }}
+                    className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-colors cursor-pointer group ${t.inner}`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <DomainBadge domain={pmt.domain} />
+                        {userTarget ? (
+                          <Link
+                            href={`/admin/users/${encodeURIComponent(userTarget)}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`text-sm font-semibold truncate hover:underline hover:text-blue-500 transition-colors ${t.title}`}
+                            title="Open user detailed profile"
+                          >
+                            {pmt.full_name || pmt.anwesha_id || pmt.paymentId}
+                          </Link>
+                        ) : (
+                          <span className={`text-sm font-semibold truncate group-hover:underline ${t.title}`}>
+                            {pmt.full_name || pmt.anwesha_id || pmt.paymentId}
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-[11px] font-mono mt-1 truncate ${t.faint}`}>{pmt.paymentId}</p>
                     </div>
-                    <p className={`text-[11px] font-mono mt-1 truncate ${t.faint}`}>{pmt.paymentId}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-blue-500 tabular-nums">₹{pmt.amount_paid || pmt.amount}</p>
-                    <span className={`inline-block px-1.5 py-0.5 text-[10px] font-bold rounded uppercase mt-0.5 ${
-                      pmt.payment_status === 'PAID' ? 'bg-emerald-500/10 text-emerald-500'
-                        : pmt.payment_status === 'FAILED' ? 'bg-rose-500/10 text-rose-500'
-                        : 'bg-amber-500/10 text-amber-500'
-                    }`}>
-                      {pmt.payment_status}
-                    </span>
-                  </div>
-                </li>
-              ))}
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                      <p className="text-sm font-bold text-blue-500 tabular-nums">₹{pmt.amount_paid || pmt.amount}</p>
+                      <div className="flex items-center gap-1.5">
+                        <IdCardStatusBadge status={pmt.id_card_status} size="xs" />
+                        <span className={`inline-block px-1.5 py-0.5 text-[10px] font-bold rounded uppercase ${
+                          pmt.payment_status === 'PAID' ? 'bg-emerald-500/10 text-emerald-500'
+                            : pmt.payment_status === 'FAILED' ? 'bg-rose-500/10 text-rose-500'
+                            : 'bg-amber-500/10 text-amber-500'
+                        }`}>
+                          {pmt.payment_status}
+                        </span>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

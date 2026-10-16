@@ -16,6 +16,7 @@ export interface PaymentRecord {
   failure_reason?: string;
   full_name: string;
   anwesha_id: string;
+  id_card_status?: string;
   email_id?: string;
   phone_number?: string;
   atom_txn_id?: string | null;

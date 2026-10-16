@@ -49,7 +49,56 @@ export async function GET(
       }
     );
 
-    const data = await res.json();
+    let data = await res.json().catch(() => ({}));
+
+    // If direct lookup returns 404 (e.g. if an Anwesha ID was passed instead of system user UUID),
+    // search for the user by anwesha_id / query to resolve their system user_id
+    if ((res.status === 404 || !data?.success) && decodedUserId) {
+      try {
+        const searchRes = await fetch(
+          `${BACKEND_URL}/admin/users?search=${encodeURIComponent(decodedUserId)}`,
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            cache: 'no-store',
+          }
+        );
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          const candidates = searchData?.data || searchData?.users || [];
+          const candidate = candidates.find(
+            (c: any) =>
+              (c.anwesha_id && c.anwesha_id.toUpperCase() === decodedUserId.toUpperCase()) ||
+              c.user_id === decodedUserId ||
+              c.id === decodedUserId
+          ) || candidates[0];
+
+          const resolvedUserId = candidate?.user_id || candidate?.id;
+          if (resolvedUserId && resolvedUserId !== decodedUserId) {
+            const fallbackRes = await fetch(
+              `${BACKEND_URL}/admin/users/${encodeURIComponent(resolvedUserId)}`,
+              {
+                method: 'GET',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                cache: 'no-store',
+              }
+            );
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json();
+              return NextResponse.json(fallbackData, { status: fallbackRes.status });
+            }
+          }
+        }
+      } catch (searchErr) {
+        console.error('Fallback search error:', searchErr);
+      }
+    }
 
     return NextResponse.json(data, {
       status: res.status,

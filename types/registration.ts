@@ -11,6 +11,7 @@ export interface SoloParticipant {
   collage_name: string;
   phone_number: string;
 
+  id_card_status?: string;
   payment_status: PaymentStatus;
   registration_status: string;
   has_attended: boolean;
@@ -36,12 +37,14 @@ export interface SoloRegistrationResponse {
 
 export interface TeamMember {
   registration_id: string;
+  user_id?: string;
   anwesha_id: string;
 
   full_name: string;
   email_id: string;
   phone_number: string;
 
+  id_card_status?: string;
   role: string;
   has_attended: boolean;
   exited_at?: string;
@@ -96,7 +99,7 @@ export interface GlobalRegistrationItem {
   user_id?: string;
   anwesha_id?: string;
   full_name?: string;
-
+  id_card_status?: string;
 
   team_id?: string;
   team_name?: string;
