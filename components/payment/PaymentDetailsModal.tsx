@@ -28,6 +28,8 @@ import {
   FiEdit2
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
+import IdCardStatusBadge from '@/components/common/IdCardStatusBadge';
 import { adminDeletePayment } from '@/lib/paymentService';
 import EditPaymentModal from './EditPaymentModal';
 
@@ -364,11 +366,37 @@ export default function PaymentDetailsModal({ paymentId, payment, isOpen, onClos
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
                     <span className="text-gray-400 font-medium">Full Name:</span>
-                    <p className="font-bold text-sm mt-0.5">{detail.payer?.full_name || detail.full_name || 'N/A'}</p>
+                    {(detail.payer?.user_id || detail.user_id || detail.payer?.anwesha_id || detail.anwesha_id) ? (
+                      <Link
+                        href={`/admin/users/${encodeURIComponent(detail.payer?.user_id || detail.user_id || detail.payer?.anwesha_id || detail.anwesha_id)}`}
+                        className="font-bold text-sm mt-0.5 hover:underline hover:text-blue-500 block"
+                        title="Open user detailed profile"
+                      >
+                        {detail.payer?.full_name || detail.full_name || 'N/A'}
+                      </Link>
+                    ) : (
+                      <p className="font-bold text-sm mt-0.5">{detail.payer?.full_name || detail.full_name || 'N/A'}</p>
+                    )}
                   </div>
                   <div>
                     <span className="text-gray-400 font-medium">Anwesha ID:</span>
-                    <p className="font-mono font-black text-indigo-500 mt-0.5">{detail.payer?.anwesha_id || detail.anwesha_id || 'N/A'}</p>
+                    {(detail.payer?.user_id || detail.user_id || detail.payer?.anwesha_id || detail.anwesha_id) ? (
+                      <Link
+                        href={`/admin/users/${encodeURIComponent(detail.payer?.user_id || detail.user_id || detail.payer?.anwesha_id || detail.anwesha_id)}`}
+                        className="font-mono font-black text-indigo-500 mt-0.5 hover:underline block"
+                        title="Open user detailed profile"
+                      >
+                        {detail.payer?.anwesha_id || detail.anwesha_id || 'N/A'}
+                      </Link>
+                    ) : (
+                      <p className="font-mono font-black text-indigo-500 mt-0.5">{detail.payer?.anwesha_id || detail.anwesha_id || 'N/A'}</p>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-gray-400 font-medium">ID Card Status:</span>
+                    <div className="mt-1">
+                      <IdCardStatusBadge status={detail.payer?.id_card_status || (detail as any).id_card_status} size="sm" />
+                    </div>
                   </div>
                   {(detail.payer?.email_id || detail.email_id) && (
                     <div>

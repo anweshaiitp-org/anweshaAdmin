@@ -71,12 +71,16 @@ export async function fetchDashboardStats(): Promise<DashboardStatsResponse> {
 
 export async function fetchAllRegistrations(
   page: number = 1,
-  limit: number = 20
+  limit: number = 20,
+  payment_status?: string,
+  id_card_status?: string
 ): Promise<GlobalRegistrationsResponse> {
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
   });
+  if (payment_status && payment_status !== 'ALL') params.set('payment_status', payment_status);
+  if (id_card_status && id_card_status !== 'ALL') params.set('id_card_status', id_card_status);
 
   const res = await fetch(`${BASE}?${params.toString()}`, {
     cache: 'no-store',
@@ -100,12 +104,16 @@ export async function fetchAllRegistrations(
 export async function fetchEventRegistrationsPaginated(
   eventId: string,
   page: number = 1,
-  limit: number = 20
+  limit: number = 20,
+  payment_status?: string,
+  id_card_status?: string
 ): Promise<EventRegistrationsResponse> {
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
   });
+  if (payment_status && payment_status !== 'ALL') params.set('payment_status', payment_status);
+  if (id_card_status && id_card_status !== 'ALL') params.set('id_card_status', id_card_status);
 
   const res = await fetch(
     `${BASE}/${encodeURIComponent(eventId)}?${params.toString()}`,

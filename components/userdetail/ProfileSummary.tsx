@@ -5,6 +5,7 @@ import {
     FiMail, FiShield, FiUser, FiEye, 
     FiLoader, FiHash, FiPrinter, FiMaximize 
 } from 'react-icons/fi';
+import IdCardStatusBadge from '@/components/common/IdCardStatusBadge';
 
 interface ProfileSummaryProps {
     isDark: boolean;
@@ -100,6 +101,8 @@ export default function ProfileSummary({
                         }`} />
                         Main Gate: {profile?.mainGate_status || 'NOT SCANNED'}
                     </span>
+                    {/* ID Card Status Badge */}
+                    <IdCardStatusBadge status={profile?.id_card_status} size="md" className="py-1.5" />
                 </div>
             </div>
 

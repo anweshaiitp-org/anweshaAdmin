@@ -24,6 +24,7 @@ import ErrorState from '@/components/events/ErrorState';
 import { TeamDetailsResponse } from '@/types/registration';
 import { TableSkeleton } from '@/components/events/EventLoadingSkeleton';
 import EditRegistrationModal from '@/components/registration/EditRegistrationModal';
+import IdCardStatusBadge from '@/components/common/IdCardStatusBadge';
 
 export default function TeamDetailsPage() {
     const { isDarkMode, user } = useAuth();
@@ -376,6 +377,10 @@ export default function TeamDetailsPage() {
                                     Phone
                                 </th>
 
+                                <th className="px-6 py-4 font-bold text-center">
+                                    ID Card
+                                </th>
+
                                 <th className="px-6 py-4 font-bold">
                                     Role
                                 </th>
@@ -426,7 +431,7 @@ export default function TeamDetailsPage() {
                                         >
                                             <Link
                                                 href={`/admin/users/${encodeURIComponent(
-                                                    member.anwesha_id
+                                                    member.user_id || member.anwesha_id
                                                 )}`}
                                                 className="hover:text-blue-500 hover:underline"
                                             >
@@ -452,6 +457,11 @@ export default function TeamDetailsPage() {
                                                 }`}
                                         >
                                             {member.phone_number}
+                                        </td>
+
+
+                                        <td className="px-6 py-4 text-center">
+                                            <IdCardStatusBadge status={member.id_card_status} />
                                         </td>
 
 

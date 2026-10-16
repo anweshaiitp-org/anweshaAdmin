@@ -12,16 +12,18 @@ export interface PaymentListFilterParams {
   limit?: number;
   domain?: string;
   status?: string;
+  id_card_status?: string;
   search?: string;
 }
 
 export const fetchPaymentList = async (params: PaymentListFilterParams = {}): Promise<PaymentListResponse> => {
-  const { cursor, limit = 50, domain, status, search } = params;
+  const { cursor, limit = 50, domain, status, id_card_status, search } = params;
   const url = new URL('/api/admin/payment/list', window.location.origin);
   url.searchParams.append('limit', limit.toString());
   if (cursor) url.searchParams.append('cursor', cursor);
   if (domain && domain !== 'ALL') url.searchParams.append('domain', domain);
   if (status && status !== 'ALL') url.searchParams.append('status', status);
+  if (id_card_status && id_card_status !== 'ALL') url.searchParams.append('id_card_status', id_card_status);
   if (search) url.searchParams.append('search', search);
 
   const res = await fetch(url.toString());
