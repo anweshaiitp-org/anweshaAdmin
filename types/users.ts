@@ -23,6 +23,8 @@ export interface User {
   mainGate_status?: 'INSIDE' | 'OUTSIDE';
   festArena_status?: 'INSIDE' | 'OUTSIDE';
   ticket_revoked_at?: string;
+  accomadation_selected?: boolean;
+  accommodation_selected?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -56,10 +58,13 @@ export interface UpdateUserPayload {
   full_name?: string;
   phone_number?: string;
   college_name?: string;
+  collage_name?: string;
   gender?: string;
   dob?: string;
   user_type?: string;
   is_email_verified?: boolean;
+  accomadation_selected?: boolean;
+  accommodation_selected?: boolean;
 }
 
 export interface VerifyIdPayload {

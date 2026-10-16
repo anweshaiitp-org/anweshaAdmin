@@ -117,6 +117,12 @@ export async function GET(
         '';
       data.data.profile.college_name = college;
       data.data.profile.collage_name = college;
+      const acc = Boolean(
+        data.data.profile.accomadation_selected ??
+        data.data.profile.accommodation_selected
+      );
+      data.data.profile.accomadation_selected = acc;
+      data.data.profile.accommodation_selected = acc;
     }
 
     return NextResponse.json(data, {
@@ -150,6 +156,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ user
   if (college) {
     bodyJson.college_name = college;
     bodyJson.collage_name = college;
+  }
+
+  if (bodyJson.accomadation_selected !== undefined || bodyJson.accommodation_selected !== undefined) {
+    const acc = Boolean(
+      bodyJson.accomadation_selected ?? bodyJson.accommodation_selected
+    );
+    bodyJson.accomadation_selected = acc;
+    bodyJson.accommodation_selected = acc;
   }
 
   try {

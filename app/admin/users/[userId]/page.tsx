@@ -69,10 +69,13 @@ export default function UserDetailPage() {
             const res = await fetchUserFullProfile(userId);
             if (res.success && res.data?.profile) {
                 const college = res.data.profile.college_name || res.data.profile.collage_name || res.data.profile.college || '';
+                const hasAccommodation = Boolean(res.data.profile.accomadation_selected ?? res.data.profile.accommodation_selected);
                 const normalizedProfile = {
                     ...res.data.profile,
                     college_name: college,
                     collage_name: college,
+                    accomadation_selected: hasAccommodation,
+                    accommodation_selected: hasAccommodation,
                 };
                 setUserData({ ...res.data, profile: normalizedProfile });
                 setFormData(normalizedProfile);
@@ -106,10 +109,13 @@ export default function UserDetailPage() {
  
         try {
             const college = formData.college_name || formData.collage_name || '';
+            const hasAccommodation = Boolean(formData.accomadation_selected ?? formData.accommodation_selected);
             const updatePayload = {
                 ...formData,
                 college_name: college,
                 collage_name: college,
+                accomadation_selected: hasAccommodation,
+                accommodation_selected: hasAccommodation,
             };
             const res = await updateUser(userData.profile.user_id, updatePayload);
             if (res.success) {
