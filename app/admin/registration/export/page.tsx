@@ -17,6 +17,8 @@ import EnlargedPhotoModal from '@/components/userdetail/Enlargedphotomodal';
 import toast from 'react-hot-toast';
 import {
   FiArrowLeft,
+  FiArrowUp,
+  FiArrowDown,
   FiDownload,
   FiFileText,
   FiImage,
@@ -30,6 +32,22 @@ import {
   FiAward,
   FiAlertCircle,
 } from 'react-icons/fi';
+
+// Helper to sort participants alphabetically by full_name
+const sortParticipantsByName = (
+  items: ExportParticipantItem[],
+  direction: 'asc' | 'desc' = 'asc'
+): ExportParticipantItem[] => {
+  return [...items].sort((a, b) => {
+    const nameA = (a.full_name || '').trim();
+    const nameB = (b.full_name || '').trim();
+    if (!nameA && !nameB) return 0;
+    if (!nameA) return 1;
+    if (!nameB) return -1;
+    const cmp = nameA.localeCompare(nameB, undefined, { sensitivity: 'base', numeric: true });
+    return direction === 'asc' ? cmp : -cmp;
+  });
+};
 
 export default function RegistrationExportPage() {
   const { isDarkMode: dark } = useAuth();
@@ -46,6 +64,14 @@ export default function RegistrationExportPage() {
   const [participants, setParticipants] = useState<ExportParticipantItem[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [eventName, setEventName] = useState<string>('');
+
+  // Sorting state (by participant name)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Memoized sorted participants by name
+  const sortedParticipants = useMemo(() => {
+    return sortParticipantsByName(participants, sortDirection);
+  }, [participants, sortDirection]);
 
   // Export progress & processing state
   const [isExporting, setIsExporting] = useState(false);
@@ -119,7 +145,8 @@ export default function RegistrationExportPage() {
     try {
       const res = await fetchEventRegistrationsExport(selectedEventId, accommodationFilter);
       if (res.success) {
-        setParticipants(res.data || []);
+        const raw = res.data || [];
+        setParticipants(sortParticipantsByName(raw, 'asc'));
         if (res.event_name) {
           setEventName(res.event_name);
         }
@@ -149,12 +176,12 @@ export default function RegistrationExportPage() {
 
   // Metrics computation
   const metrics = useMemo(() => {
-    const total = participants.length;
-    const withAcc = participants.filter((p) => p.accomadation_selected).length;
+    const total = sortedParticipants.length;
+    const withAcc = sortedParticipants.filter((p) => p.accomadation_selected).length;
     const withoutAcc = total - withAcc;
-    const hasImage = participants.filter((p) => Boolean(p.college_id_url || p.college_id_card)).length;
+    const hasImage = sortedParticipants.filter((p) => Boolean(p.college_id_url || p.college_id_card)).length;
     return { total, withAcc, withoutAcc, hasImage };
-  }, [participants]);
+  }, [sortedParticipants]);
 
   // Safe filename generator
   const getExportFilename = (extension: 'docx' | 'pdf') => {
@@ -173,20 +200,20 @@ export default function RegistrationExportPage() {
 
   // 3. Export to DOCX Handler
   const handleExportDocx = async () => {
-    if (participants.length === 0) {
+    if (sortedParticipants.length === 0) {
       toast.error('No verified participants to export');
       return;
     }
 
     setIsExporting(true);
     setExportType('docx');
-    setProgress({ current: 0, total: participants.length, message: 'Initiating Word export...' });
+    setProgress({ current: 0, total: sortedParticipants.length, message: 'Initiating Word export...' });
 
     try {
       const blob = await generateDossierDocx({
         eventName: eventName || 'Solo Event',
         accommodationFilter,
-        participants,
+        participants: sortedParticipants,
         onProgress: (p) => setProgress(p),
       });
 
@@ -204,20 +231,20 @@ export default function RegistrationExportPage() {
 
   // 4. Export to PDF Handler
   const handleExportPdf = async () => {
-    if (participants.length === 0) {
+    if (sortedParticipants.length === 0) {
       toast.error('No verified participants to export');
       return;
     }
 
     setIsExporting(true);
     setExportType('pdf');
-    setProgress({ current: 0, total: participants.length, message: 'Initiating PDF export...' });
+    setProgress({ current: 0, total: sortedParticipants.length, message: 'Initiating PDF export...' });
 
     try {
       const blob = await generateDossierPdf({
         eventName: eventName || 'Solo Event',
         accommodationFilter,
-        participants,
+        participants: sortedParticipants,
         onProgress: (p) => setProgress(p),
       });
 
@@ -281,7 +308,7 @@ export default function RegistrationExportPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={handleExportDocx}
-              disabled={isExporting || dataLoading || participants.length === 0}
+              disabled={isExporting || dataLoading || sortedParticipants.length === 0}
               className={`inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold text-white transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                 isExporting && exportType === 'docx'
                   ? 'bg-blue-700 animate-pulse'
@@ -294,7 +321,7 @@ export default function RegistrationExportPage() {
 
             <button
               onClick={handleExportPdf}
-              disabled={isExporting || dataLoading || participants.length === 0}
+              disabled={isExporting || dataLoading || sortedParticipants.length === 0}
               className={`inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold text-white transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                 isExporting && exportType === 'pdf'
                   ? 'bg-rose-700 animate-pulse'
@@ -476,20 +503,36 @@ export default function RegistrationExportPage() {
 
       {/* Live Preview Table */}
       <div className={`rounded-3xl border overflow-hidden ${theme.card}`}>
-        <div className="p-5 sm:p-6 border-b border-gray-200/60 dark:border-gray-800 flex items-center justify-between">
+        <div className="p-5 sm:p-6 border-b border-gray-200/60 dark:border-gray-800 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <FiLayers size={18} className="text-blue-500" />
             <h2 className={`text-base font-bold ${theme.title}`}>
               Dossier Preview — {eventName || 'Event'}
             </h2>
             <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">
-              {participants.length} records
+              {sortedParticipants.length} records
             </span>
           </div>
 
-          <span className={`text-xs ${theme.muted}`}>
-            Matches DOCX / PDF 3-Column Single-Header Layout
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                dark
+                  ? 'bg-gray-800/80 border-gray-700 text-gray-200 hover:bg-gray-700'
+                  : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+              }`}
+              title="Click to toggle Name sort order"
+            >
+              <span>Sort Name:</span>
+              <span className="text-blue-500 font-bold">{sortDirection === 'asc' ? 'A → Z' : 'Z → A'}</span>
+              {sortDirection === 'asc' ? <FiArrowUp size={13} className="text-blue-500" /> : <FiArrowDown size={13} className="text-blue-500" />}
+            </button>
+            <span className={`text-xs ${theme.muted} hidden md:inline`}>
+              Matches DOCX / PDF 3-Column Layout
+            </span>
+          </div>
         </div>
 
         {dataLoading ? (
@@ -497,7 +540,7 @@ export default function RegistrationExportPage() {
             <FiRefreshCw size={28} className="animate-spin text-blue-500" />
             <p className={`text-sm font-semibold ${theme.muted}`}>Loading participant data & ID links…</p>
           </div>
-        ) : participants.length === 0 ? (
+        ) : sortedParticipants.length === 0 ? (
           <div className="p-16 flex flex-col items-center justify-center text-center space-y-3">
             <div className="p-4 rounded-full bg-gray-500/10 text-gray-400">
               <FiAlertCircle size={32} />
@@ -514,12 +557,29 @@ export default function RegistrationExportPage() {
               <thead>
                 <tr className={`border-b text-xs font-bold uppercase tracking-wider ${theme.th}`}>
                   <th className="py-4 px-4 text-center w-16">S.No</th>
-                  <th className="py-4 px-6 w-[45%]">Participant Details</th>
+                  <th className="py-4 px-6 w-[45%]">
+                    <button
+                      type="button"
+                      onClick={() => setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+                      className="inline-flex items-center gap-2 font-bold uppercase tracking-wider hover:text-blue-500 transition-colors cursor-pointer"
+                      title={`Click to sort by Name (${sortDirection === 'asc' ? 'Descending' : 'Ascending'})`}
+                    >
+                      <span>Participant Details</span>
+                      <span className="text-[10px] font-semibold text-blue-500 normal-case px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 flex items-center gap-1">
+                        Name {sortDirection === 'asc' ? 'A–Z' : 'Z–A'}
+                        {sortDirection === 'asc' ? (
+                          <FiArrowUp size={12} className="text-blue-500" />
+                        ) : (
+                          <FiArrowDown size={12} className="text-blue-500" />
+                        )}
+                      </span>
+                    </button>
+                  </th>
                   <th className="py-4 px-6 text-center w-[45%]">Student ID Card Image</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800 text-sm">
-                {participants.map((item, idx) => (
+                {sortedParticipants.map((item, idx) => (
                   <tr key={item.registration_id || item.user_id} className={`transition-colors ${theme.trHover}`}>
                     {/* Column 1: Serial Number */}
                     <td className="py-5 px-4 text-center align-middle font-bold text-sm text-gray-500 dark:text-gray-400">

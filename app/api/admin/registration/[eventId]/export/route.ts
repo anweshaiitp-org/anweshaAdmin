@@ -43,8 +43,22 @@ export async function GET(
       data = null;
     }
 
+    const sortByName = (list: any[]) => {
+      return list.sort((a, b) => {
+        const nameA = (a?.full_name || '').trim();
+        const nameB = (b?.full_name || '').trim();
+        if (!nameA && !nameB) return 0;
+        if (!nameA) return 1;
+        if (!nameB) return -1;
+        return nameA.localeCompare(nameB, undefined, { sensitivity: 'base', numeric: true });
+      });
+    };
+
     // If backend endpoint is active and responded
     if (res.ok && data?.success) {
+      if (Array.isArray(data.data)) {
+        sortByName(data.data);
+      }
       return NextResponse.json(data, { status: 200 });
     }
 
@@ -140,6 +154,8 @@ export async function GET(
       } else if (accommodation === 'without' || accommodation === 'no' || accommodation === 'false') {
         filtered = enriched.filter((u) => u.accomadation_selected !== true);
       }
+
+      sortByName(filtered);
 
       return NextResponse.json({
         success: true,
