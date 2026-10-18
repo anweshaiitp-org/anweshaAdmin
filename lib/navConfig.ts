@@ -11,7 +11,8 @@ import {
   FiZap,
   FiActivity,
   FiUserPlus,
-  FiUsers
+  FiUsers,
+  FiFileText
 } from "react-icons/fi";
 
 export const sidebarItems = [
@@ -19,6 +20,7 @@ export const sidebarItems = [
   { name: "User", icon: FiUser, path: "/admin/users" },
   { name: "Manual Entry", icon: FiUserPlus, path: "/admin/manual-entry" },
   { name: "Events", icon: FiCalendar, path: "/admin/events" },
+  { name: "Forms", icon: FiFileText, path: "/admin/forms" },
   { name: "Registration", icon: FiClipboard, path: "/admin/registration" },
   { name: "Accommodation", icon: FiHome, path: "/admin/accommodation" },
   { name: "Payments", icon: FiCreditCard, path: "/admin/payment" },
