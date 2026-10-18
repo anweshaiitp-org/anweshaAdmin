@@ -116,6 +116,7 @@ export default function FormDetailPage({
         total_amount: formData.form.total_amount,
         is_prepaid: formData.form.is_prepaid,
         linked_payment_id: formData.form.linked_payment_id || '',
+        transaction_id: formData.form.transaction_id || '',
         expires_at: formData.form.expires_at ? formData.form.expires_at.substring(0, 16) : '',
         is_active: formData.form.is_active
       });
@@ -414,7 +415,7 @@ export default function FormDetailPage({
               </p>
             )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-sm">
               <div>
                 <span className={`text-xs block ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Event Name</span>
                 <span className="font-semibold text-amber-500">{eventData?.name || form.event_id}</span>
@@ -426,7 +427,7 @@ export default function FormDetailPage({
               </div>
 
               <div>
-                <span className={`text-xs block ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Fee Override</span>
+                <span className={`text-xs block ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Fee / Participant</span>
                 <span className="font-semibold">₹{form.total_amount}</span>
               </div>
 
@@ -436,6 +437,15 @@ export default function FormDetailPage({
                   {form.expires_at ? new Date(form.expires_at).toLocaleString() : 'Never'}
                 </span>
               </div>
+
+              {form.transaction_id && (
+                <div>
+                  <span className={`text-xs block ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Transaction ID</span>
+                  <span className="font-semibold font-mono text-amber-400 text-xs truncate block" title={form.transaction_id}>
+                    {form.transaction_id}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -980,7 +990,7 @@ export default function FormDetailPage({
                   {/* Fee Amount */}
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5">
-                      Total Fee Amount (₹)
+                      Fee per Participant (₹)
                     </label>
                     <div className="relative">
                       <FiDollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -995,7 +1005,7 @@ export default function FormDetailPage({
                       />
                     </div>
                     <p className={`text-[11px] mt-1 ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Standard event fee: ₹{eventData?.registration_fee || 0}. Set 0 for free entry.
+                      Price for all participants using this form. Standard event fee: ₹{eventData?.registration_fee || 0}. Set 0 for free entry.
                     </p>
                   </div>
 
@@ -1029,6 +1039,25 @@ export default function FormDetailPage({
                       Submissions will automatically close after this date. Leave blank to never expire.
                     </p>
                   </div>
+                </div>
+
+                {/* Transaction ID */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5">
+                    Transaction ID (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.transaction_id || ''}
+                    onChange={(e) => setEditData({ ...editData, transaction_id: e.target.value })}
+                    placeholder="e.g. TXN-2027-891024 or UPI Reference"
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all ${
+                      dark ? 'bg-gray-900 border-gray-700 text-white focus:border-amber-500' : 'bg-gray-50 border-gray-300 text-gray-900 focus:border-amber-500'
+                    }`}
+                  />
+                  <p className={`text-[11px] mt-1 ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Optional unique transaction reference for offline or external sponsor payment. Must be unique across all forms.
+                  </p>
                 </div>
               </div>
             </div>

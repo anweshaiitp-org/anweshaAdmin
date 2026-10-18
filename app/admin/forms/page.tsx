@@ -54,6 +54,7 @@ export default function FormsManagementPage() {
     total_amount: 0,
     is_prepaid: false,
     linked_payment_id: '',
+    transaction_id: '',
     expires_at: '',
     is_active: true
   });
@@ -180,6 +181,7 @@ export default function FormsManagementPage() {
         total_amount: 0,
         is_prepaid: false,
         linked_payment_id: '',
+        transaction_id: '',
         expires_at: '',
         is_active: true
       });
@@ -384,15 +386,27 @@ export default function FormsManagementPage() {
 
                       {/* Fee / Prepaid */}
                       <td className="py-4 px-4">
-                        <div className="font-semibold">₹{form.total_amount}</div>
-                        <div>
+                        <div className="font-semibold">
+                          ₹{form.total_amount} <span className="text-[11px] font-normal text-gray-400">/ person</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 mt-0.5">
                           {form.is_prepaid ? (
-                            <span className="text-[11px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                            <span className="text-[11px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md uppercase tracking-wider w-fit">
                               Prepaid
                             </span>
                           ) : (
                             <span className="text-[11px] font-medium text-gray-400">
                               Direct Pay
+                            </span>
+                          )}
+                          {form.transaction_id && (
+                            <span
+                              className={`text-[10px] font-mono truncate max-w-[140px] px-1.5 py-0.5 rounded ${
+                                dark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-700'
+                              }`}
+                              title={`Transaction ID: ${form.transaction_id}`}
+                            >
+                              Tx: {form.transaction_id}
                             </span>
                           )}
                         </div>
@@ -559,7 +573,7 @@ export default function FormsManagementPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1">Total Fee Amount (₹)</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1">Fee per Participant (₹)</label>
                   <input
                     type="number"
                     min="0"
@@ -569,6 +583,9 @@ export default function FormsManagementPage() {
                       dark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'
                     }`}
                   />
+                  <p className={`text-[11px] mt-1 ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Price for all participants using this form.
+                  </p>
                 </div>
 
                 <div>
@@ -581,7 +598,28 @@ export default function FormsManagementPage() {
                       dark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'
                     }`}
                   />
+                  <p className={`text-[11px] mt-1 ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Optional auto-close schedule.
+                  </p>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider mb-1">
+                  Transaction ID (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={createData.transaction_id || ''}
+                  onChange={(e) => setCreateData({ ...createData, transaction_id: e.target.value })}
+                  placeholder="e.g. TXN-2027-99120 or UPI Reference"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none ${
+                    dark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'
+                  }`}
+                />
+                <p className={`text-[11px] mt-1 ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Must be unique across all forms if specified.
+                </p>
               </div>
 
               <div className="flex items-center gap-6 pt-2">

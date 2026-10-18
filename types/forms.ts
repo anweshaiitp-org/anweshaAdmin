@@ -8,6 +8,7 @@ export interface CustomFormSummary {
   current_uses: number;
   total_amount: number;
   is_prepaid: boolean;
+  transaction_id?: string;
   is_active: boolean;
   expires_at?: string;
   created_at?: string;
@@ -25,6 +26,7 @@ export interface CustomFormDetail {
   total_amount: number;
   is_prepaid: boolean;
   linked_payment_id?: string;
+  transaction_id?: string;
   is_active: boolean;
   expires_at?: string;
   created_at?: string;
@@ -40,6 +42,8 @@ export interface CreateFormPayload {
   total_amount?: number;
   is_prepaid?: boolean;
   linked_payment_id?: string;
+  transaction_id?: string;
+  transactionId?: string;
   expires_at?: string;
   is_active?: boolean;
 }
@@ -52,6 +56,8 @@ export interface UpdateFormPayload {
   total_amount?: number;
   is_prepaid?: boolean;
   linked_payment_id?: string;
+  transaction_id?: string;
+  transactionId?: string;
   expires_at?: string;
   is_active?: boolean;
 }
